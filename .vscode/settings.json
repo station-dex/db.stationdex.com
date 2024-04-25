@@ -1,0 +1,36 @@
+{
+  "editor.tabSize": 2,
+  "editor.foldingStrategy": "indentation",
+  "editor.wrappingIndent": "indent",
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "editor.autoIndent": "none",
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
+  "standard.autoFixOnSave": true,
+  "tsImportSorter.configuration.development.enableDebug": false,
+  "tsImportSorter.configuration.hasSemicolon": false,
+  "tsImportSorter.configuration.trailingComma": "none",
+  "javascript.suggestionActions.enabled": false,
+  "[javascript]": {
+    "editor.formatOnSave": false,
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  },
+  "[json]": {
+    "editor.quickSuggestions": {
+      "strings": true
+    },
+    "editor.suggest.insertMode": "replace",
+    "editor.defaultFormatter": "vscode.json-language-features",
+  },
+  "editor.padding.top": 24,
+  "terminal.integrated.scrollback": 50000,
+  "cSpell.words": [
+    "ipfs",
+    "lockdown",
+    "Nonfungible",
+    "refundee",
+    "stationdex",
+    "Unstaked"
+  ]
+}
