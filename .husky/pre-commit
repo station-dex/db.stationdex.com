@@ -1,0 +1,2 @@
+yarn generate
+git add build/db.sql
