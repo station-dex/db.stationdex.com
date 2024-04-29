@@ -59,6 +59,7 @@ CREATE TABLE core.transactions
   transaction_hash                                  text NOT NULL,
   address                                           address /* NOT NULL */,
   block_timestamp                                   integer NOT NULL,
+  log_index                                         integer NOT NULL,
   block_number                                      text NOT NULL,
   transaction_sender                                address,
   chain_id                                          uint256 NOT NULL,
@@ -74,6 +75,9 @@ ON core.transactions(address);
 
 CREATE INDEX IF NOT EXISTS transactions_block_timestamp_inx
 ON core.transactions(block_timestamp);
+
+CREATE INDEX IF NOT EXISTS transactions_log_index_inx
+ON core.transactions(log_index);
 
 CREATE INDEX IF NOT EXISTS transactions_block_number_inx
 ON core.transactions(block_number);
