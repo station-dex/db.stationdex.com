@@ -1,7 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-DROP SCHEMA IF EXISTS core CASCADE;
-CREATE SCHEMA core;
+CREATE SCHEMA IF NOT EXISTS core;
 
 DROP DOMAIN IF EXISTS bytes32;
 DROP DOMAIN IF EXISTS address;
@@ -817,7 +816,7 @@ CREATE TABLE core.universal_router_rewards_sent
 ) INHERITS (core.transactions);
 
 
-CREATE SCHEMA meta;
+CREATE SCHEMA IF NOT EXISTS meta;
 
 CREATE TABLE IF NOT EXISTS meta.locks
 (
