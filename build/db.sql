@@ -96,7 +96,8 @@ CREATE TABLE core.v2_factory_pair_created
   token0                                          address NOT NULL,
   token1                                          address NOT NULL,
   pair                                            address NOT NULL,
-  position                                        uint256 NOT NULL
+  position                                        uint256 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v2_factory_pair_created_token0_inx
@@ -113,7 +114,8 @@ CREATE TABLE core.v2_pair_approval
 (
   owner                                           address NOT NULL,
   spender                                         address NOT NULL,
-  value                                           uint256 NOT NULL
+  value                                           uint256 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v2_pair_approval_owner_inx
@@ -131,7 +133,8 @@ CREATE TABLE core.v2_pair_burn
   sender                                          address NOT NULL,
   amount0                                         uint256 NOT NULL,
   amount1                                         uint256 NOT NULL,
-  sent_to                                         address NOT NULL
+  sent_to                                         address NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v2_pair_burn_sender_inx
@@ -149,7 +152,8 @@ CREATE TABLE core.v2_pair_mint
 (
   sender                                          address NOT NULL,
   amount0                                         uint256 NOT NULL,
-  amount1                                         uint256 NOT NULL
+  amount1                                         uint256 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v2_pair_mint_sender_inx
@@ -168,7 +172,8 @@ CREATE TABLE core.v2_pair_swap
   amount1_in                                      uint256 NOT NULL,
   amount0_out                                     uint256 NOT NULL,
   amount1_out                                     uint256 NOT NULL,
-  sent_to                                         address NOT NULL
+  sent_to                                         address NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v2_pair_swap_sender_inx
@@ -185,7 +190,8 @@ event Sync(uint112 reserve0, uint112 reserve1)
 CREATE TABLE core.v2_pair_sync
 (
   reserve0                                        uint112 NOT NULL,
-  reserve1                                        uint112 NOT NULL
+  reserve1                                        uint112 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 /***************************************************************************************
@@ -197,7 +203,8 @@ CREATE TABLE core.v2_pair_transfer
 (
   sender                                          address NOT NULL,
   receiver                                        address NOT NULL,
-  value                                           uint256 NOT NULL
+  value                                           uint256 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v2_pair_transfer_sender_inx
@@ -214,7 +221,8 @@ event FeeAmountEnabled(uint24 indexed fee, int24 indexed tickSpacing)
 CREATE TABLE core.v3_factory_fee_amount_enabled
 (
   fee                                             uint24 NOT NULL,
-  tick_spacing                                    int24 NOT NULL
+  tick_spacing                                    int24 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v3_factory_fee_amount_enabled_fee_inx
@@ -231,7 +239,8 @@ event OwnerChanged(address indexed oldOwner, address indexed newOwner)
 CREATE TABLE core.owner_changed
 (
   old_owner                                       address NOT NULL,
-  new_owner                                       address NOT NULL
+  new_owner                                       address NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS owner_changed_old_owner_inx
@@ -252,7 +261,8 @@ CREATE TABLE core.v3_factory_pool_created
   token1                                          address NOT NULL,
   fee                                             uint24 NOT NULL,
   tick_spacing                                    int24 NOT NULL,
-  pool                                            address NOT NULL
+  pool                                            address NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v3_factory_pool_created_token0_inx
@@ -272,7 +282,8 @@ event UpdateTokenRatioPriority(address token, int256 priority)
 CREATE TABLE core.update_token_ratio_priority
 (
   token                                           address NOT NULL,
-  priority                                        int256 NOT NULL
+  priority                                        int256 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS update_token_ratio_priority_token_inx
@@ -287,7 +298,8 @@ CREATE TABLE core.nft_position_manager_approval
 (
   owner                                           address NOT NULL,
   approved                                        address NOT NULL,
-  token_id                                        uint256 NOT NULL
+  token_id                                        uint256 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 
@@ -309,7 +321,8 @@ CREATE TABLE core.nft_position_manager_approval_for_all
 (
   owner                                           address NOT NULL,
   operator                                        address NOT NULL,
-  approved                                        boolean NOT NULL
+  approved                                        boolean NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS nft_position_manager_approval_for_all_owner_inx
@@ -332,7 +345,8 @@ CREATE TABLE core.nft_position_manager_collect
   token_id                                        uint256 NOT NULL,
   recipient                                       address NOT NULL,
   amount0                                         uint256 NOT NULL,
-  amount1                                         uint256 NOT NULL
+  amount1                                         uint256 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS nft_position_manager_collect_token_id_inx
@@ -352,7 +366,8 @@ CREATE TABLE core.nft_position_manager_decrease_liquidity
   token_id                                        uint256 NOT NULL,
   liquidity                                       uint128 NOT NULL,
   amount0                                         uint256 NOT NULL,
-  amount1                                         uint256 NOT NULL
+  amount1                                         uint256 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS nft_position_manager_decrease_liquidity_token_id_inx
@@ -369,7 +384,8 @@ CREATE TABLE core.nft_position_manager_increase_liquidity
   token_id                                        uint256 NOT NULL,
   liquidity                                       uint128 NOT NULL,
   amount0                                         uint256 NOT NULL,
-  amount1                                         uint256 NOT NULL
+  amount1                                         uint256 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS nft_position_manager_increase_liquidity_token_id_inx
@@ -384,7 +400,8 @@ CREATE TABLE core.nft_position_manager_transfer
 (
   sender                                          address NOT NULL,
   receiver                                        address NOT NULL,
-  token_id                                        uint256 NOT NULL
+  token_id                                        uint256 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS nft_position_manager_transfer_sender_inx
@@ -408,7 +425,8 @@ CREATE TABLE core.permit2_approval
   token                                           address NOT NULL,
   spender                                         address NOT NULL,
   amount                                          uint160 NOT NULL,
-  expiration                                      uint48 NOT NULL
+  expiration                                      uint48 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS permit2_approval_owner_inx
@@ -429,7 +447,8 @@ CREATE TABLE core.permit2_lockdown
 (
   owner                                           address NOT NULL,
   token                                           address NOT NULL,
-  spender                                         address NOT NULL
+  spender                                         address NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS permit2_lockdown_owner_inx
@@ -453,7 +472,8 @@ CREATE TABLE core.permit2_nonce_invalidation
   token                                           address NOT NULL,
   spender                                         address NOT NULL,
   new_nonce                                       uint48 NOT NULL,
-  old_nonce                                       uint48 NOT NULL
+  old_nonce                                       uint48 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS permit2_nonce_invalidation_owner_inx
@@ -478,7 +498,8 @@ CREATE TABLE core.permit
   spender                                         address NOT NULL,
   amount                                          uint160 NOT NULL,
   expiration                                      uint48 NOT NULL,
-  nonce                                           uint48 NOT NULL
+  nonce                                           uint48 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS permit2_owner_inx
@@ -499,7 +520,8 @@ CREATE TABLE core.permit2_unordered_nonce_invalidation
 (
   owner                                           address NOT NULL,
   word                                            uint256 NOT NULL,
-  mask                                            uint256 NOT NULL
+  mask                                            uint256 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS permit2_unordered_nonce_invalidation_owner_inx
@@ -518,7 +540,8 @@ CREATE TABLE core.v3_pool_burn
   tick_upper                                      int24 NOT NULL,
   amount                                          uint128 NOT NULL,
   amount0                                         uint256 NOT NULL,
-  amount1                                         uint256 NOT NULL
+  amount1                                         uint256 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v3_pool_burn_owner_inx
@@ -543,7 +566,8 @@ CREATE TABLE core.v3_pool_collect
   tick_lower                                      int24 NOT NULL,
   tick_upper                                      int24 NOT NULL,
   amount0                                         uint128 NOT NULL,
-  amount1                                         uint128 NOT NULL
+  amount1                                         uint128 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v3_pool_collect_owner_inx
@@ -569,7 +593,8 @@ CREATE TABLE core.v3_pool_collect_protocol
   sender                                          address NOT NULL,
   recipient                                       address NOT NULL,
   amount0                                         uint128 NOT NULL,
-  amount1                                         uint128 NOT NULL
+  amount1                                         uint128 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v3_pool_collect_protocol_sender_inx
@@ -591,7 +616,8 @@ CREATE TABLE core.v3_pool_flash
   amount0                                         uint256 NOT NULL,
   amount1                                         uint256 NOT NULL,
   paid0                                           uint256 NOT NULL,
-  paid1                                           uint256 NOT NULL
+  paid1                                           uint256 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v3_pool_flash_sender_inx
@@ -609,7 +635,8 @@ event IncreaseObservationCardinalityNext(uint16 observationCardinalityNextOld,
 CREATE TABLE core.v3_pool_increase_observation_cardinality_next
 (
   observation_cardinality_next_old                uint16 NOT NULL,
-  observation_cardinality_next_new                uint16 NOT NULL
+  observation_cardinality_next_new                uint16 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 
@@ -621,7 +648,8 @@ event Initialize(uint160 sqrtPriceX96, int24 tick)
 CREATE TABLE core.v3_pool_initialize
 (
   sqrt_price_x96                                  uint160 NOT NULL,
-  tick                                            int24 NOT NULL
+  tick                                            int24 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 /***************************************************************************************
@@ -638,7 +666,8 @@ CREATE TABLE core.v3_pool_mint
   tick_upper                                      int24 NOT NULL,
   amount                                          uint128 NOT NULL,
   amount0                                         uint256 NOT NULL,
-  amount1                                         uint256 NOT NULL
+  amount1                                         uint256 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v3_pool_mint_sender_inx
@@ -661,7 +690,8 @@ CREATE TABLE core.v3_pool_set_fee_protocol
   fee_protocol0_old                               uint8 NOT NULL,
   fee_protocol1_old                               uint8 NOT NULL,
   fee_protocol0_new                               uint8 NOT NULL,
-  fee_protocol1_new                               uint8 NOT NULL
+  fee_protocol1_new                               uint8 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 /***************************************************************************************
@@ -678,7 +708,8 @@ CREATE TABLE core.v3_pool_swap
   amount1                                         int256 NOT NULL,
   sqrt_price_x96                                  uint160 NOT NULL,
   liquidity                                       uint128 NOT NULL,
-  tick                                            int24 NOT NULL
+  tick                                            int24 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v3_pool_swap_sender_inx
@@ -704,7 +735,8 @@ CREATE TABLE core.deposit_transferred
 (
   token_id                                        uint256 NOT NULL,
   old_owner                                       address NOT NULL,
-  new_owner                                       address NOT NULL
+  new_owner                                       address NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS deposit_transferred_token_id_inx
@@ -731,7 +763,8 @@ CREATE TABLE core.v3_pool_incentive_created
   start_time                                      uint256 NOT NULL,
   end_time                                        uint256 NOT NULL,
   refundee                                        address NOT NULL,
-  reward                                          uint256 NOT NULL
+  reward                                          uint256 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v3_pool_incentive_created_reward_token_inx
@@ -748,7 +781,8 @@ event IncentiveEnded(bytes32 indexed incentiveId, uint256 refund)
 CREATE TABLE core.v3_pool_incentive_ended
 (
   incentive_id                                    bytes32 NOT NULL,
-  refund                                          uint256 NOT NULL
+  refund                                          uint256 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v3_pool_incentive_ended_incentive_id_inx
@@ -762,7 +796,8 @@ event RewardClaimed(address indexed sentTo, uint256 reward)
 CREATE TABLE core.v3_pool_reward_claimed
 (
   sent_to                                         address NOT NULL,
-  reward                                          uint256 NOT NULL
+  reward                                          uint256 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v3_pool_reward_claimed_sent_to_inx
@@ -779,7 +814,8 @@ CREATE TABLE core.v3_pool_token_staked
 (
   token_id                                        uint256 NOT NULL,
   incentive_id                                    bytes32 NOT NULL,
-  liquidity                                       uint128 NOT NULL
+  liquidity                                       uint128 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v3_pool_token_staked_token_id_inx
@@ -796,7 +832,8 @@ event TokenUnstaked(uint256 indexed tokenId, bytes32 indexed incentiveId)
 CREATE TABLE core.v3_pool_token_unstaked
 (
   token_id                                        uint256 NOT NULL,
-  incentive_id                                    bytes32 NOT NULL
+  incentive_id                                    bytes32 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 CREATE INDEX IF NOT EXISTS v3_pool_token_unstaked_token_id_inx
@@ -812,7 +849,8 @@ event RewardsSent(uint256 amount)
 
 CREATE TABLE core.universal_router_rewards_sent
 (
-  amount                                          uint256 NOT NULL
+  amount                                          uint256 NOT NULL,
+  PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
 
