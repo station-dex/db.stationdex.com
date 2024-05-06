@@ -131,7 +131,6 @@ ON core.transactions(address);
 CREATE INDEX transactions_block_timestamp_inx
 ON core.transactions(block_timestamp);
 
-
 CREATE INDEX IF NOT EXISTS transactions_log_index_inx
 ON core.transactions(log_index);
 
@@ -950,6 +949,12 @@ BEGIN
   FROM core.logins
   WHERE 1 = 1
   AND core.logins.login_id = _login_id;
+END
+$$
+LANGUAGE plpgsql;
+
+ALTER FUNCTION get_user_id_by_login_id OWNER TO writeuser;
+
 CREATE SCHEMA IF NOT EXISTS meta;
 
 CREATE TABLE IF NOT EXISTS meta.locks
@@ -1005,7 +1010,6 @@ END
 $$
 LANGUAGE plpgsql;
 
-ALTER FUNCTION get_user_id_by_login_id OWNER TO writeuser;
 -- SELECT * FROM meta.progress_tracker;
 
 --
