@@ -45,6 +45,62 @@ END
 $$
 LANGUAGE plpgsql;
 
+CREATE TABLE core.users
+(
+  user_id                         uuid PRIMARY KEY DEFAULT(uuid_generate_v4()),
+  name                            text,
+  referral_id                     uuid,
+  account                         text NOT NULL,
+  created_at                      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT(NOW()),
+  banned_till                     TIMESTAMP WITH TIME ZONE
+);
+
+ALTER TABLE core.users OWNER TO writeuser;
+
+CREATE INDEX users_referral_id_inx
+ON core.users(referral_id);
+
+CREATE UNIQUE INDEX users_account_uix
+ON core.users(LOWER(account));
+
+CREATE TABLE core.logins
+(
+  login_id                        uuid PRIMARY KEY DEFAULT(uuid_generate_v4()),
+  user_id                         uuid NOT NULL REFERENCES core.users,
+  ip_address                      national character varying(256),
+  user_agent                      national character varying(256),
+  browser                         national character varying(256),
+  created_at                      TIMESTAMP WITH TIME ZONE DEFAULT(NOW())
+);
+
+ALTER TABLE core.logins OWNER TO writeuser;
+
+CREATE TABLE core.referrals
+(
+  referral_id                     uuid PRIMARY KEY DEFAULT(uuid_generate_v4()),
+  referrer                        uuid NOT NULL REFERENCES core.users,
+  memo                            national character varying(512),
+  referral_code                   national character varying(32) NOT NULL UNIQUE,
+  total_referrals                 integer NOT NULL DEFAULT(0),
+  deleted                         boolean NOT NULL DEFAULT(false),
+  created_at                      TIMESTAMP WITH TIME ZONE DEFAULT(NOW()),
+  updated_at                      TIMESTAMP WITH TIME ZONE DEFAULT(NOW()),
+  deleted_at                      TIMESTAMP WITH TIME ZONE
+);
+
+ALTER TABLE core.referrals OWNER TO writeuser;
+
+DO
+$$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_referral_id_fkey') THEN
+    ALTER TABLE core.users
+    ADD CONSTRAINT users_referral_id_fkey
+    FOREIGN KEY (referral_id) REFERENCES core.referrals;
+  END IF;
+END
+$$
+LANGUAGE plpgsql;
 
 CREATE TABLE core.locks
 (
@@ -66,25 +122,25 @@ CREATE TABLE core.transactions
   event_name                                        text
 );
 
-CREATE INDEX IF NOT EXISTS transactions_transaction_hash_inx
+CREATE INDEX transactions_transaction_hash_inx
 ON core.transactions(transaction_hash);
 
-CREATE INDEX IF NOT EXISTS transactions_address_inx
+CREATE INDEX transactions_address_inx
 ON core.transactions(address);
 
-CREATE INDEX IF NOT EXISTS transactions_block_timestamp_inx
+CREATE INDEX transactions_block_timestamp_inx
 ON core.transactions(block_timestamp);
 
 CREATE INDEX IF NOT EXISTS transactions_log_index_inx
 ON core.transactions(log_index);
 
-CREATE INDEX IF NOT EXISTS transactions_block_number_inx
+CREATE INDEX transactions_block_number_inx
 ON core.transactions(block_number);
 
-CREATE INDEX IF NOT EXISTS transactions_chain_id_inx
+CREATE INDEX transactions_chain_id_inx
 ON core.transactions(chain_id);
 
-CREATE INDEX IF NOT EXISTS transactions_event_name_inx
+CREATE INDEX transactions_event_name_inx
 ON core.transactions(event_name);
 
 /***************************************************************************************
@@ -100,10 +156,10 @@ CREATE TABLE core.v2_factory_pair_created
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v2_factory_pair_created_token0_inx
+CREATE INDEX v2_factory_pair_created_token0_inx
 ON core.v2_factory_pair_created(token0);
 
-CREATE INDEX IF NOT EXISTS v2_factory_pair_created_token1_inx
+CREATE INDEX v2_factory_pair_created_token1_inx
 ON core.v2_factory_pair_created(token1);
 
 /***************************************************************************************
@@ -118,10 +174,10 @@ CREATE TABLE core.v2_pair_approval
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v2_pair_approval_owner_inx
+CREATE INDEX v2_pair_approval_owner_inx
 ON core.v2_pair_approval(owner);
 
-CREATE INDEX IF NOT EXISTS v2_pair_approval_spender_inx
+CREATE INDEX v2_pair_approval_spender_inx
 ON core.v2_pair_approval(spender);
 
 /***************************************************************************************
@@ -137,10 +193,10 @@ CREATE TABLE core.v2_pair_burn
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v2_pair_burn_sender_inx
+CREATE INDEX v2_pair_burn_sender_inx
 ON core.v2_pair_burn(sender);
 
-CREATE INDEX IF NOT EXISTS v2_pair_burn_sent_to_inx
+CREATE INDEX v2_pair_burn_sent_to_inx
 ON core.v2_pair_burn(sent_to);
 
 /***************************************************************************************
@@ -156,7 +212,7 @@ CREATE TABLE core.v2_pair_mint
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v2_pair_mint_sender_inx
+CREATE INDEX v2_pair_mint_sender_inx
 ON core.v2_pair_mint(sender);
 
 /***************************************************************************************
@@ -176,10 +232,10 @@ CREATE TABLE core.v2_pair_swap
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v2_pair_swap_sender_inx
+CREATE INDEX v2_pair_swap_sender_inx
 ON core.v2_pair_swap(sender);
 
-CREATE INDEX IF NOT EXISTS v2_pair_swap_sent_to_inx
+CREATE INDEX v2_pair_swap_sent_to_inx
 ON core.v2_pair_swap(sent_to);
 
 /***************************************************************************************
@@ -207,10 +263,10 @@ CREATE TABLE core.v2_pair_transfer
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v2_pair_transfer_sender_inx
+CREATE INDEX v2_pair_transfer_sender_inx
 ON core.v2_pair_transfer(sender);
 
-CREATE INDEX IF NOT EXISTS v2_pair_transfer_receiver_inx
+CREATE INDEX v2_pair_transfer_receiver_inx
 ON core.v2_pair_transfer(receiver);
 
 /***************************************************************************************
@@ -225,10 +281,10 @@ CREATE TABLE core.v3_factory_fee_amount_enabled
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v3_factory_fee_amount_enabled_fee_inx
+CREATE INDEX v3_factory_fee_amount_enabled_fee_inx
 ON core.v3_factory_fee_amount_enabled(fee);
 
-CREATE INDEX IF NOT EXISTS v3_factory_fee_amount_enabled_tick_spacing_inx
+CREATE INDEX v3_factory_fee_amount_enabled_tick_spacing_inx
 ON core.v3_factory_fee_amount_enabled(tick_spacing);
 
 /***************************************************************************************
@@ -243,10 +299,10 @@ CREATE TABLE core.owner_changed
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS owner_changed_old_owner_inx
+CREATE INDEX owner_changed_old_owner_inx
 ON core.owner_changed(old_owner);
 
-CREATE INDEX IF NOT EXISTS owner_changed_new_owner_inx
+CREATE INDEX owner_changed_new_owner_inx
 ON core.owner_changed(new_owner);
 
 /***************************************************************************************
@@ -265,13 +321,13 @@ CREATE TABLE core.v3_factory_pool_created
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v3_factory_pool_created_token0_inx
+CREATE INDEX v3_factory_pool_created_token0_inx
 ON core.v3_factory_pool_created(token0);
 
-CREATE INDEX IF NOT EXISTS v3_factory_pool_created_token1_inx
+CREATE INDEX v3_factory_pool_created_token1_inx
 ON core.v3_factory_pool_created(token1);
 
-CREATE INDEX IF NOT EXISTS v3_factory_pool_created_pool_inx
+CREATE INDEX v3_factory_pool_created_pool_inx
 ON core.v3_factory_pool_created(pool);
 
 /***************************************************************************************
@@ -286,7 +342,7 @@ CREATE TABLE core.update_token_ratio_priority
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS update_token_ratio_priority_token_inx
+CREATE INDEX update_token_ratio_priority_token_inx
 ON core.update_token_ratio_priority(token);
 
 /***************************************************************************************
@@ -303,13 +359,13 @@ CREATE TABLE core.nft_position_manager_approval
 ) INHERITS (core.transactions);
 
 
-CREATE INDEX IF NOT EXISTS nft_position_manager_approval_owner_inx
+CREATE INDEX nft_position_manager_approval_owner_inx
 ON core.nft_position_manager_approval(owner);
 
-CREATE INDEX IF NOT EXISTS nft_position_manager_approval_approved_inx
+CREATE INDEX nft_position_manager_approval_approved_inx
 ON core.nft_position_manager_approval(approved);
 
-CREATE INDEX IF NOT EXISTS nft_position_manager_approval_token_id_inx
+CREATE INDEX nft_position_manager_approval_token_id_inx
 ON core.nft_position_manager_approval(token_id);
 
 /***************************************************************************************
@@ -325,13 +381,13 @@ CREATE TABLE core.nft_position_manager_approval_for_all
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS nft_position_manager_approval_for_all_owner_inx
+CREATE INDEX nft_position_manager_approval_for_all_owner_inx
 ON core.nft_position_manager_approval_for_all(owner);
 
-CREATE INDEX IF NOT EXISTS nft_position_manager_approval_for_all_operator_inx
+CREATE INDEX nft_position_manager_approval_for_all_operator_inx
 ON core.nft_position_manager_approval_for_all(operator);
 
-CREATE INDEX IF NOT EXISTS nft_position_manager_approval_for_all_approved_inx
+CREATE INDEX nft_position_manager_approval_for_all_approved_inx
 ON core.nft_position_manager_approval_for_all(approved);
 
 /***************************************************************************************
@@ -349,10 +405,10 @@ CREATE TABLE core.nft_position_manager_collect
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS nft_position_manager_collect_token_id_inx
+CREATE INDEX nft_position_manager_collect_token_id_inx
 ON core.nft_position_manager_collect(token_id);
 
-CREATE INDEX IF NOT EXISTS nft_position_manager_collect_recipient_inx
+CREATE INDEX nft_position_manager_collect_recipient_inx
 ON core.nft_position_manager_collect(recipient);
 
 /***************************************************************************************
@@ -370,7 +426,7 @@ CREATE TABLE core.nft_position_manager_decrease_liquidity
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS nft_position_manager_decrease_liquidity_token_id_inx
+CREATE INDEX nft_position_manager_decrease_liquidity_token_id_inx
 ON core.nft_position_manager_decrease_liquidity(token_id);
 
 /***************************************************************************************
@@ -388,7 +444,7 @@ CREATE TABLE core.nft_position_manager_increase_liquidity
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS nft_position_manager_increase_liquidity_token_id_inx
+CREATE INDEX nft_position_manager_increase_liquidity_token_id_inx
 ON core.nft_position_manager_increase_liquidity(token_id);
 
 /***************************************************************************************
@@ -404,13 +460,13 @@ CREATE TABLE core.nft_position_manager_transfer
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS nft_position_manager_transfer_sender_inx
+CREATE INDEX nft_position_manager_transfer_sender_inx
 ON core.nft_position_manager_transfer(sender);
 
-CREATE INDEX IF NOT EXISTS nft_position_manager_transfer_receiver_inx
+CREATE INDEX nft_position_manager_transfer_receiver_inx
 ON core.nft_position_manager_transfer(receiver);
 
-CREATE INDEX IF NOT EXISTS nft_position_manager_transfer_token_id_inx
+CREATE INDEX nft_position_manager_transfer_token_id_inx
 ON core.nft_position_manager_transfer(token_id);
 
 /***************************************************************************************
@@ -429,13 +485,13 @@ CREATE TABLE core.permit2_approval
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS permit2_approval_owner_inx
+CREATE INDEX permit2_approval_owner_inx
 ON core.permit2_approval(owner);
 
-CREATE INDEX IF NOT EXISTS permit2_approval_token_inx
+CREATE INDEX permit2_approval_token_inx
 ON core.permit2_approval(token);
 
-CREATE INDEX IF NOT EXISTS permit2_approval_spender_inx
+CREATE INDEX permit2_approval_spender_inx
 ON core.permit2_approval(spender);
 
 /***************************************************************************************
@@ -451,13 +507,13 @@ CREATE TABLE core.permit2_lockdown
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS permit2_lockdown_owner_inx
+CREATE INDEX permit2_lockdown_owner_inx
 ON core.permit2_lockdown(owner);
 
-CREATE INDEX IF NOT EXISTS permit2_lockdown_token_inx
+CREATE INDEX permit2_lockdown_token_inx
 ON core.permit2_lockdown(token);
 
-CREATE INDEX IF NOT EXISTS permit2_lockdown_spender_inx
+CREATE INDEX permit2_lockdown_spender_inx
 ON core.permit2_lockdown(spender);
 
 /***************************************************************************************
@@ -476,13 +532,13 @@ CREATE TABLE core.permit2_nonce_invalidation
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS permit2_nonce_invalidation_owner_inx
+CREATE INDEX permit2_nonce_invalidation_owner_inx
 ON core.permit2_nonce_invalidation(owner);
 
-CREATE INDEX IF NOT EXISTS permit2_nonce_invalidation_token_inx
+CREATE INDEX permit2_nonce_invalidation_token_inx
 ON core.permit2_nonce_invalidation(token);
 
-CREATE INDEX IF NOT EXISTS permit2_nonce_invalidation_spender_inx
+CREATE INDEX permit2_nonce_invalidation_spender_inx
 ON core.permit2_nonce_invalidation(spender);
 
 /***************************************************************************************
@@ -502,13 +558,13 @@ CREATE TABLE core.permit
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS permit2_owner_inx
+CREATE INDEX permit2_owner_inx
 ON core.permit(owner);
 
-CREATE INDEX IF NOT EXISTS permit2_token_inx
+CREATE INDEX permit2_token_inx
 ON core.permit(token);
 
-CREATE INDEX IF NOT EXISTS permit2_spender_inx
+CREATE INDEX permit2_spender_inx
 ON core.permit(spender);
 
 /***************************************************************************************
@@ -524,7 +580,7 @@ CREATE TABLE core.permit2_unordered_nonce_invalidation
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS permit2_unordered_nonce_invalidation_owner_inx
+CREATE INDEX permit2_unordered_nonce_invalidation_owner_inx
 ON core.permit2_unordered_nonce_invalidation(owner);
 
 
@@ -544,13 +600,13 @@ CREATE TABLE core.v3_pool_burn
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v3_pool_burn_owner_inx
+CREATE INDEX v3_pool_burn_owner_inx
 ON core.v3_pool_burn(owner);
 
-CREATE INDEX IF NOT EXISTS v3_pool_burn_tick_lower_inx
+CREATE INDEX v3_pool_burn_tick_lower_inx
 ON core.v3_pool_burn(tick_lower);
 
-CREATE INDEX IF NOT EXISTS v3_pool_burn_tick_upper_inx
+CREATE INDEX v3_pool_burn_tick_upper_inx
 ON core.v3_pool_burn(tick_upper);
 
 /***************************************************************************************
@@ -570,16 +626,16 @@ CREATE TABLE core.v3_pool_collect
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v3_pool_collect_owner_inx
+CREATE INDEX v3_pool_collect_owner_inx
 ON core.v3_pool_collect(owner);
 
-CREATE INDEX IF NOT EXISTS v3_pool_collect_recipient_inx
+CREATE INDEX v3_pool_collect_recipient_inx
 ON core.v3_pool_collect(recipient);
 
-CREATE INDEX IF NOT EXISTS v3_pool_collect_tick_lower_inx
+CREATE INDEX v3_pool_collect_tick_lower_inx
 ON core.v3_pool_collect(tick_lower);
 
-CREATE INDEX IF NOT EXISTS v3_pool_collect_tick_upper_inx
+CREATE INDEX v3_pool_collect_tick_upper_inx
 ON core.v3_pool_collect(tick_upper);
 
 /***************************************************************************************
@@ -597,10 +653,10 @@ CREATE TABLE core.v3_pool_collect_protocol
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v3_pool_collect_protocol_sender_inx
+CREATE INDEX v3_pool_collect_protocol_sender_inx
 ON core.v3_pool_collect_protocol(sender);
 
-CREATE INDEX IF NOT EXISTS v3_pool_collect_protocol_recipient_inx
+CREATE INDEX v3_pool_collect_protocol_recipient_inx
 ON core.v3_pool_collect_protocol(recipient);
 
 /***************************************************************************************
@@ -620,10 +676,10 @@ CREATE TABLE core.v3_pool_flash
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v3_pool_flash_sender_inx
+CREATE INDEX v3_pool_flash_sender_inx
 ON core.v3_pool_flash(sender);
 
-CREATE INDEX IF NOT EXISTS v3_pool_flash_recipient_inx
+CREATE INDEX v3_pool_flash_recipient_inx
 ON core.v3_pool_flash(recipient);
 
 /***************************************************************************************
@@ -670,13 +726,13 @@ CREATE TABLE core.v3_pool_mint
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v3_pool_mint_sender_inx
+CREATE INDEX v3_pool_mint_sender_inx
 ON core.v3_pool_mint(sender);
 
-CREATE INDEX IF NOT EXISTS v3_pool_mint_owner_inx
+CREATE INDEX v3_pool_mint_owner_inx
 ON core.v3_pool_mint(owner);
 
-CREATE INDEX IF NOT EXISTS v3_pool_mint_tick_lower_inx
+CREATE INDEX v3_pool_mint_tick_lower_inx
 ON core.v3_pool_mint(tick_lower);
 
 /***************************************************************************************
@@ -712,10 +768,10 @@ CREATE TABLE core.v3_pool_swap
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v3_pool_swap_sender_inx
+CREATE INDEX v3_pool_swap_sender_inx
 ON core.v3_pool_swap(sender);
 
-CREATE INDEX IF NOT EXISTS v3_pool_swap_recipient_inx
+CREATE INDEX v3_pool_swap_recipient_inx
 ON core.v3_pool_swap(recipient);
 
 /***************************************************************************************
@@ -739,13 +795,13 @@ CREATE TABLE core.deposit_transferred
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS deposit_transferred_token_id_inx
+CREATE INDEX deposit_transferred_token_id_inx
 ON core.deposit_transferred(token_id);
 
-CREATE INDEX IF NOT EXISTS deposit_transferred_old_owner_inx
+CREATE INDEX deposit_transferred_old_owner_inx
 ON core.deposit_transferred(old_owner);
 
-CREATE INDEX IF NOT EXISTS deposit_transferred_new_owner_inx
+CREATE INDEX deposit_transferred_new_owner_inx
 ON core.deposit_transferred(new_owner);
 
 
@@ -767,10 +823,10 @@ CREATE TABLE core.v3_pool_incentive_created
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v3_pool_incentive_created_reward_token_inx
+CREATE INDEX v3_pool_incentive_created_reward_token_inx
 ON core.v3_pool_incentive_created(reward_token);
 
-CREATE INDEX IF NOT EXISTS v3_pool_incentive_created_pool_inx
+CREATE INDEX v3_pool_incentive_created_pool_inx
 ON core.v3_pool_incentive_created(pool);
 
 /***************************************************************************************
@@ -785,7 +841,7 @@ CREATE TABLE core.v3_pool_incentive_ended
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v3_pool_incentive_ended_incentive_id_inx
+CREATE INDEX v3_pool_incentive_ended_incentive_id_inx
 ON core.v3_pool_incentive_ended(incentive_id);
 
 /***************************************************************************************
@@ -800,7 +856,7 @@ CREATE TABLE core.v3_pool_reward_claimed
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v3_pool_reward_claimed_sent_to_inx
+CREATE INDEX v3_pool_reward_claimed_sent_to_inx
 ON core.v3_pool_reward_claimed(sent_to);
 
 
@@ -818,10 +874,10 @@ CREATE TABLE core.v3_pool_token_staked
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v3_pool_token_staked_token_id_inx
+CREATE INDEX v3_pool_token_staked_token_id_inx
 ON core.v3_pool_token_staked(token_id);
 
-CREATE INDEX IF NOT EXISTS v3_pool_token_staked_incentive_id_inx
+CREATE INDEX v3_pool_token_staked_incentive_id_inx
 ON core.v3_pool_token_staked(incentive_id);
 
 /***************************************************************************************
@@ -836,10 +892,10 @@ CREATE TABLE core.v3_pool_token_unstaked
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
-CREATE INDEX IF NOT EXISTS v3_pool_token_unstaked_token_id_inx
+CREATE INDEX v3_pool_token_unstaked_token_id_inx
 ON core.v3_pool_token_unstaked(token_id);
 
-CREATE INDEX IF NOT EXISTS v3_pool_token_unstaked_incentive_id_inx
+CREATE INDEX v3_pool_token_unstaked_incentive_id_inx
 ON core.v3_pool_token_unstaked(incentive_id);
 
 /***************************************************************************************
@@ -853,6 +909,51 @@ CREATE TABLE core.universal_router_rewards_sent
   PRIMARY KEY (id)
 ) INHERITS (core.transactions);
 
+
+CREATE OR REPLACE FUNCTION get_name_by_login_id(_login_id uuid)
+RETURNS uuid
+STABLE
+AS
+$$
+BEGIN
+  RETURN get_name_by_user_id(get_user_id_by_login_id(_login_id));
+END
+$$
+LANGUAGE plpgsql;
+
+ALTER FUNCTION get_name_by_login_id OWNER TO writeuser;
+
+CREATE OR REPLACE FUNCTION get_name_by_user_id(_user_id uuid)
+RETURNS uuid
+STABLE
+AS
+$$
+BEGIN
+  RETURN core.users.name
+  FROM core.users
+  WHERE 1 = 1
+  AND core.users.user_id = _user_id;
+END
+$$
+LANGUAGE plpgsql;
+
+ALTER FUNCTION get_name_by_user_id OWNER TO writeuser;
+
+CREATE OR REPLACE FUNCTION get_user_id_by_login_id(_login_id uuid)
+RETURNS uuid
+STABLE
+AS
+$$
+BEGIN
+  RETURN user_id
+  FROM core.logins
+  WHERE 1 = 1
+  AND core.logins.login_id = _login_id;
+END
+$$
+LANGUAGE plpgsql;
+
+ALTER FUNCTION get_user_id_by_login_id OWNER TO writeuser;
 
 CREATE SCHEMA IF NOT EXISTS meta;
 

@@ -26,11 +26,17 @@
   "editor.padding.top": 24,
   "terminal.integrated.scrollback": 50000,
   "cSpell.words": [
+    "conname",
+    "fkey",
     "ipfs",
     "lockdown",
     "Nonfungible",
+    "ossp",
+    "readonlyuser",
     "refundee",
+    "rolname",
     "stationdex",
-    "Unstaked"
+    "Unstaked",
+    "writeuser"
   ]
 }
