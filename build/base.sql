@@ -1,3 +1,43 @@
+CREATE OR REPLACE FUNCTION create_referral
+(
+  _login_id                       uuid,
+  _memo                           national character varying(512)
+)
+RETURNS text
+AS
+$$
+  DECLARE _referral_id            uuid = uuid_generate_v4();
+  DECLARE _referrer_id            uuid;
+  DECLARE _referral_code          text;
+  DECLARE _limit                  integer = 10;
+  DECLARE _count                  integer;
+BEGIN
+  SELECT user_id INTO _referrer_id
+  FROM core.logins
+  WHERE login_id = _login_id;
+
+  SELECT COUNT(*) INTO _count
+  FROM core.referrals
+  WHERE 1 = 1
+  AND NOT deleted
+  AND referrer = _referrer_id;
+
+  IF(_count >= _limit) THEN
+    RETURN NULL;
+  END IF;
+
+  _referral_code := get_referral_code();
+
+  INSERT INTO core.referrals(referral_id, referrer, memo, referral_code)
+  SELECT _referral_id, _referrer_id, _memo, _referral_code;
+
+  RETURN _referral_code;
+END
+$$
+LANGUAGE plpgsql;
+
+ALTER FUNCTION create_referral OWNER TO writeuser;
+
 CREATE OR REPLACE FUNCTION get_name_by_login_id(_login_id uuid)
 RETURNS uuid
 STABLE
@@ -26,6 +66,33 @@ $$
 LANGUAGE plpgsql;
 
 ALTER FUNCTION get_name_by_user_id OWNER TO writeuser;
+
+CREATE OR REPLACE FUNCTION get_referral_code()
+RETURNS text
+STABLE
+AS
+$$
+  DECLARE _prefixes text[] = '{Zum,Pix,Fei,Ras,Fozz,Quix,Zeb,Mop,Glip,Vun,Dax,Jiv,Kex,Bop,Yuz,Nix,Pev,Lox,Ruv,Zep,Quaz,Drix,Yop,Wix,Ziv,Kip,Gox,Vex,Jaz,Qux,Blip,Fex,Piz,Jux,Voz,Zix,Gep,Quip,Pox,Ziv,Fip,Xux,Koz,Vep,Lix,Zox,Mux,Quex,Ziz,Diz,Zup,Vix,Pox,Tix,Zun,Qip,Vux,Zem,Bux,Nux,Zat,Vop,Zob,Xix,Zav,Qev,Zut,Zop,Vez,Zil,Quem,Zim,Zul,Vub,Zik,Zed,Vez,Zor,Xax,Zun,Zay,Quem,Zad,Zol,Vex,Ziv,Zob,Quam,Zol,Zix,Zop,Vez,Zup,Zep,Zog,Zev,Zin,Zab,Zof,Zem,Zuz,Zav,Zul,Zor}';
+  DECLARE _suffix text = array_to_string(ARRAY(SELECT chr((48 + round(random() * 9)) :: integer) FROM generate_series(1,7)), '');
+  DECLARE _code text;
+BEGIN
+  _code := CONCAT
+  (
+    UPPER(_prefixes[1 + floor((random() * array_length(_prefixes, 1)))::int]),
+    '-',
+    _suffix
+  );
+
+  IF EXISTS(SELECT 1 FROM core.referrals WHERE referral_code = _code) THEN
+    RETURN get_referral_code();
+  END IF;
+
+  RETURN _code;
+END
+$$
+LANGUAGE plpgsql;
+
+ALTER FUNCTION get_referral_code OWNER TO writeuser;
 
 CREATE OR REPLACE FUNCTION get_user_id_by_login_id(_login_id uuid)
 RETURNS uuid
