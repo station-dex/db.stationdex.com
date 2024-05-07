@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS meta.locks
   created_at                                        TIMESTAMP WITH TIME ZONE DEFAULT (NOW())
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS locks_ensure_unique_uix
+CREATE UNIQUE INDEX IF NOT EXISTS locks_project_id_uix
 ON meta.locks (LOWER(project_id));
 
 -- SELECT * FROM meta.locks;
