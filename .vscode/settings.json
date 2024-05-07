@@ -27,6 +27,7 @@
   "terminal.integrated.scrollback": 50000,
   "cSpell.words": [
     "conname",
+    "ERRCODE",
     "fkey",
     "ipfs",
     "lockdown",
@@ -37,6 +38,7 @@
     "rolname",
     "stationdex",
     "Unstaked",
+    "upto",
     "writeuser"
   ]
 }
