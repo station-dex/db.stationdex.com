@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION sign_in
   _name                           text,
   _referral_code                  text,
   _ip_address                     text,
-  _user_agent                     text,
+  _user_agent                     jsonb,
   _browser                        text
 )
 RETURNS uuid
@@ -19,6 +19,7 @@ $$
   DECLARE _user_id                uuid;
   DECLARE _login_id               uuid = uuid_generate_v4();
   DECLARE _login_count            integer;
+  DECLARE _new_user               boolean = false;
 BEGIN
   SELECT referral_id INTO _referral_id
   FROM core.referrals
@@ -40,6 +41,8 @@ BEGIN
     SELECT 1 FROM core.users
     WHERE LOWER(account) = LOWER(_account)
   ) THEN
+    _new_user := true;
+
     INSERT INTO core.users(account, name, referral_id)
     SELECT _account, _name, _referral_id;
 
@@ -53,6 +56,12 @@ BEGIN
       SET total_referrals = total_referrals + 1
       WHERE referral_id = _referral_id;
     END IF;
+  END IF;
+
+
+  IF(NOT _new_user AND COALESCE(_referral_code, '') <> '') THEN
+    RAISE EXCEPTION USING ERRCODE = 'X1892', MESSAGE = 'Invalid referral code';
+    RETURN NULL;
   END IF;
 
   SELECT user_id INTO _user_id

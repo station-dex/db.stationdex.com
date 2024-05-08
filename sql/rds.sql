@@ -68,7 +68,7 @@ CREATE TABLE core.logins
   login_id                        uuid PRIMARY KEY DEFAULT(uuid_generate_v4()),
   user_id                         uuid NOT NULL REFERENCES core.users,
   ip_address                      national character varying(256),
-  user_agent                      national character varying(256),
+  user_agent                      jsonb,
   browser                         national character varying(256),
   created_at                      TIMESTAMP WITH TIME ZONE DEFAULT(NOW())
 );

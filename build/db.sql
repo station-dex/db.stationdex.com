@@ -68,7 +68,7 @@ CREATE TABLE core.logins
   login_id                        uuid PRIMARY KEY DEFAULT(uuid_generate_v4()),
   user_id                         uuid NOT NULL REFERENCES core.users,
   ip_address                      national character varying(256),
-  user_agent                      national character varying(256),
+  user_agent                      jsonb,
   browser                         national character varying(256),
   created_at                      TIMESTAMP WITH TIME ZONE DEFAULT(NOW())
 );
@@ -918,23 +918,28 @@ CREATE OR REPLACE FUNCTION create_referral
 RETURNS text
 AS
 $$
+  ----------------------------------------------------------------
+  DECLARE _active_limit           integer = 12;
+  DECLARE _total_limit            integer = 24;
+  ----------------------------------------------------------------
   DECLARE _referral_id            uuid = uuid_generate_v4();
-  DECLARE _referrer_id            uuid;
+  DECLARE _referrer_id            uuid = get_user_id_by_login_id(_login_id);
   DECLARE _referral_code          text;
-  DECLARE _limit                  integer = 10;
-  DECLARE _count                  integer;
+  DECLARE _active_count           integer;
+  DECLARE _total_count            integer;
 BEGIN
-  SELECT user_id INTO _referrer_id
-  FROM core.logins
-  WHERE login_id = _login_id;
-
-  SELECT COUNT(*) INTO _count
+  SELECT COUNT(*) INTO _active_count
   FROM core.referrals
   WHERE 1 = 1
   AND NOT deleted
   AND referrer = _referrer_id;
 
-  IF(_count >= _limit) THEN
+  SELECT COUNT(*) INTO _total_count
+  FROM core.referrals
+  WHERE 1 = 1
+  AND referrer = _referrer_id;
+
+  IF(_active_count >= _active_limit OR _total_count >= _total_limit) THEN
     RETURN NULL;
   END IF;
 
@@ -1028,7 +1033,7 @@ CREATE OR REPLACE FUNCTION sign_in
   _name                           text,
   _referral_code                  text,
   _ip_address                     text,
-  _user_agent                     text,
+  _user_agent                     jsonb,
   _browser                        text
 )
 RETURNS uuid
@@ -1043,6 +1048,7 @@ $$
   DECLARE _user_id                uuid;
   DECLARE _login_id               uuid = uuid_generate_v4();
   DECLARE _login_count            integer;
+  DECLARE _new_user               boolean = false;
 BEGIN
   SELECT referral_id INTO _referral_id
   FROM core.referrals
@@ -1064,6 +1070,8 @@ BEGIN
     SELECT 1 FROM core.users
     WHERE LOWER(account) = LOWER(_account)
   ) THEN
+    _new_user := true;
+
     INSERT INTO core.users(account, name, referral_id)
     SELECT _account, _name, _referral_id;
 
@@ -1077,6 +1085,12 @@ BEGIN
       SET total_referrals = total_referrals + 1
       WHERE referral_id = _referral_id;
     END IF;
+  END IF;
+
+
+  IF(NOT _new_user AND COALESCE(_referral_code, '') <> '') THEN
+    RAISE EXCEPTION USING ERRCODE = 'X1892', MESSAGE = 'Invalid referral code';
+    RETURN NULL;
   END IF;
 
   SELECT user_id INTO _user_id
