@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION get_name_by_user_id(_user_id uuid)
 RETURNS uuid
-STABLE
+STABLE PARALLEL SAFE
 AS
 $$
 BEGIN
