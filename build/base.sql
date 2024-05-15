@@ -1,3 +1,105 @@
+CREATE TABLE IF NOT EXISTS environment_variables
+(
+  key                                            text NOT NULL PRIMARY KEY,
+  value                                          text NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS environment_variables_key_uix
+ON environment_variables(LOWER(key));
+
+ALTER TABLE environment_variables OWNER TO writeuser;
+
+CREATE OR REPLACE FUNCTION env(_key text, _value text)
+RETURNS void
+AS
+$$
+BEGIN
+  IF(_value IS NULL) THEN
+    DELETE FROM environment_variables
+    WHERE LOWER(key) = LOWER(_key);
+    RETURN;
+  END IF;
+
+  INSERT INTO environment_variables(key, value)
+  VALUES (_key, _value)
+  ON CONFLICT (key)
+  DO UPDATE SET value = _value;
+END
+$$
+LANGUAGE plpgsql;
+
+ALTER FUNCTION env(_key text, _value text) OWNER TO writeuser;
+
+CREATE OR REPLACE FUNCTION env(_key text)
+RETURNS text
+STABLE PARALLEL SAFE
+AS
+$$
+BEGIN
+  RETURN value FROM environment_variables
+  WHERE LOWER(key) = LOWER(_key);
+END
+$$
+LANGUAGE plpgsql;
+
+ALTER FUNCTION env(_key text) OWNER TO writeuser;
+
+SELECT env('USDT',                                                  '0x1e4a5963abfd975d8c9021ce480b42188849d41d');
+SELECT env('WOKB',                                                  '0xe538905cf8410324e03a5a23c1c177a474d59b2b');
+SELECT env('WETH',                                                  '0x5a77f1443d16ee5761d310e38b62f77f726bc71c');
+SELECT env('v2:WOKB/USDT',                                          '0xfcf21d9dcf4f6a5abcc04176cddbd1414f4a3798');
+SELECT env('v3:WOKB/USDT',                                          '0x11e7c6ff7ad159e179023bb771aec61db6d9234d');
+SELECT env('v3:WETH/USDT',                                          '0xdd26d766020665f0e7c0d35532cf11ee8ed29d5a');
+
+SELECT env('swap:point',                                            '15');
+SELECT env('liquidity:point',                                       '1');
+
+SELECT env('0x1e4a5963abfd975d8c9021ce480b42188849d41d:name',       'USDT');
+SELECT env('0xe538905cf8410324e03a5a23c1c177a474d59b2b:name',       'WOKB');
+SELECT env('0x5a77f1443d16ee5761d310e38b62f77f726bc71c:name',       'WETH');
+SELECT env('0xfcf21d9dcf4f6a5abcc04176cddbd1414f4a3798:name',       'v2:WOKB/USDT');
+SELECT env('0x11e7c6ff7ad159e179023bb771aec61db6d9234d:name',       'v3:WOKB/USDT');
+SELECT env('0xdd26d766020665f0e7c0d35532cf11ee8ed29d5a:name',       'v3:WETH/USDT');
+
+SELECT env('0x1e4a5963abfd975d8c9021ce480b42188849d41d:decimals',   '6');
+SELECT env('0xe538905cf8410324e03a5a23c1c177a474d59b2b:decimals',   '18');
+SELECT env('0x5a77f1443d16ee5761d310e38b62f77f726bc71c:decimals',   '18');
+
+SELECT env('referral:points',                                       '0.1');
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS whitelisted_pool_view
+AS
+WITH whitelisted_pools
+AS
+(
+  SELECT
+    'v2'                                                        AS version,
+    'WOKB/USDT'                                                 AS name,
+    env('v2:WOKB/USDT')                                         AS pool_address,
+    env('USDT')                                                 AS token0,
+    env('WOKB')                                                 AS token1,
+    true                                                        AS token0_is_stablecoin
+  UNION ALL
+  SELECT
+    'v3'                                                        AS version,
+    'WOKB/USDT'                                                 AS name,
+    env('v3:WOKB/USDT')                                         AS pool_address,
+    env('USDT')                                                 AS token0,
+    env('WOKB')                                                 AS token1,
+    true                                                        AS token0_is_stablecoin
+  UNION ALL
+  SELECT
+    'v3'                                                        AS version,
+    'WETH/USDT'                                                 AS name,
+    env('v3:WETH/USDT')                                         AS pool_address,
+    env('USDT')                                                 AS token0,
+    env('WETH')                                                 AS token1,
+    true                                                        AS token0_is_stablecoin
+)
+SELECT * FROM whitelisted_pools;
+
+ALTER MATERIALIZED VIEW whitelisted_pool_view OWNER TO writeuser;
+
 CREATE OR REPLACE FUNCTION create_referral
 (
   _login_id                       uuid,
@@ -43,9 +145,25 @@ LANGUAGE plpgsql;
 
 ALTER FUNCTION create_referral OWNER TO writeuser;
 
+CREATE OR REPLACE FUNCTION get_account_by_user_id(_user_id uuid)
+RETURNS text
+STABLE PARALLEL SAFE
+AS
+$$
+BEGIN
+  RETURN core.users.account
+  FROM core.users
+  WHERE 1 = 1
+  AND core.users.user_id = _user_id;
+END
+$$
+LANGUAGE plpgsql;
+
+ALTER FUNCTION get_account_by_user_id(_user_id uuid) OWNER TO writeuser;
+
 CREATE OR REPLACE FUNCTION get_name_by_login_id(_login_id uuid)
 RETURNS uuid
-STABLE
+STABLE PARALLEL SAFE
 AS
 $$
 BEGIN
@@ -58,7 +176,7 @@ ALTER FUNCTION get_name_by_login_id OWNER TO writeuser;
 
 CREATE OR REPLACE FUNCTION get_name_by_user_id(_user_id uuid)
 RETURNS uuid
-STABLE
+STABLE PARALLEL SAFE
 AS
 $$
 BEGIN
@@ -99,9 +217,26 @@ LANGUAGE plpgsql;
 
 ALTER FUNCTION get_referral_code OWNER TO writeuser;
 
+CREATE OR REPLACE FUNCTION get_referrer(_account text)
+RETURNS uuid
+STABLE PARALLEL SAFE
+AS
+$$
+BEGIN
+  RETURN core.referrals.referrer
+  FROM core.referrals
+  INNER JOIN core.users
+  ON core.users.referral_id = core.referrals.referral_id
+  AND core.users.account = _account;
+END
+$$
+LANGUAGE plpgsql;
+
+ALTER FUNCTION get_referrer(_account text) OWNER TO writeuser;
+
 CREATE OR REPLACE FUNCTION get_user_id_by_login_id(_login_id uuid)
 RETURNS uuid
-STABLE
+STABLE PARALLEL SAFE
 AS
 $$
 BEGIN
@@ -229,6 +364,396 @@ $$
 LANGUAGE plpgsql;
 
 ALTER FUNCTION sign_in OWNER TO writeuser;
+
+CREATE OR REPLACE VIEW liquidity_transaction_view
+AS
+SELECT
+  'v2'                                                          AS version,
+  'remove'                                                      AS action,
+  core.v2_pair_burn.transaction_sender                          AS account,
+  whitelisted_pool_view.pool_address,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN whitelisted_pool_view.token0
+    ELSE whitelisted_pool_view.token1
+  END                                                           AS stablecoin,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN whitelisted_pool_view.token1
+    ELSE whitelisted_pool_view.token0
+  END                                                           AS token,
+  env(CONCAT(whitelisted_pool_view.pool_address, ':name'))      AS pool_name,
+  core.v2_pair_burn.block_timestamp,
+  core.v2_pair_burn.transaction_hash,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN ABS(core.v2_pair_burn.amount0)
+    ELSE ABS(core.v2_pair_burn.amount1)
+  END                                                           AS stablecoin_amount,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN ABS(core.v2_pair_burn.amount1)
+    ELSE ABS(core.v2_pair_burn.amount0)
+  END                                                           AS token_amount
+FROM core.v2_pair_burn
+JOIN whitelisted_pool_view
+ON LOWER(core.v2_pair_burn.address) = LOWER(whitelisted_pool_view.pool_address)
+AND whitelisted_pool_view.version = 'v2'
+
+UNION ALL
+
+SELECT
+  'v2'                                                          AS version,
+  'add'                                                         AS action,
+  core.v2_pair_mint.transaction_sender                          AS account,
+  whitelisted_pool_view.pool_address,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN whitelisted_pool_view.token0
+    ELSE whitelisted_pool_view.token1
+  END                                                           AS stablecoin,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN whitelisted_pool_view.token1
+    ELSE whitelisted_pool_view.token0
+  END                                                           AS token,
+  env(CONCAT(whitelisted_pool_view.pool_address, ':name'))      AS pool_name,
+  core.v2_pair_mint.block_timestamp,
+  core.v2_pair_mint.transaction_hash,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN ABS(core.v2_pair_mint.amount0)
+    ELSE ABS(core.v2_pair_mint.amount1)
+  END                                                           AS stablecoin_amount,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN ABS(core.v2_pair_mint.amount1)
+    ELSE ABS(core.v2_pair_mint.amount0)
+  END                                                           AS token_amount
+FROM core.v2_pair_mint
+JOIN whitelisted_pool_view
+ON LOWER(core.v2_pair_mint.address) = LOWER(whitelisted_pool_view.pool_address)
+AND whitelisted_pool_view.version = 'v2'
+
+UNION ALL
+
+SELECT
+  'v3'                                                          AS version,
+  'add'                                                         AS action,
+  core.v3_pool_mint.transaction_sender                          AS account,
+  whitelisted_pool_view.pool_address,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN whitelisted_pool_view.token0
+    ELSE whitelisted_pool_view.token1
+  END                                                           AS stablecoin,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN whitelisted_pool_view.token1
+    ELSE whitelisted_pool_view.token0
+  END                                                           AS token,
+  env(CONCAT(whitelisted_pool_view.pool_address, ':name'))      AS pool_name,
+  core.v3_pool_mint.block_timestamp,
+  core.v3_pool_mint.transaction_hash,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN ABS(core.v3_pool_mint.amount0)
+    ELSE ABS(core.v3_pool_mint.amount1)
+  END                                                           AS stablecoin_amount,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN ABS(core.v3_pool_mint.amount1)
+    ELSE ABS(core.v3_pool_mint.amount0)
+  END                                                           AS token_amount
+FROM core.v3_pool_mint
+JOIN whitelisted_pool_view
+ON LOWER(core.v3_pool_mint.address) = LOWER(whitelisted_pool_view.pool_address)
+AND whitelisted_pool_view.version = 'v3'
+
+UNION ALL
+
+SELECT
+  'v3'                                                          AS version,
+  'remove'                                                      AS action,
+  core.v3_pool_burn.transaction_sender                          AS account,
+  whitelisted_pool_view.pool_address,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN whitelisted_pool_view.token0
+    ELSE whitelisted_pool_view.token1
+  END                                                           AS stablecoin,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN whitelisted_pool_view.token1
+    ELSE whitelisted_pool_view.token0
+  END                                                           AS token,
+  env(CONCAT(whitelisted_pool_view.pool_address, ':name'))      AS pool_name,
+  core.v3_pool_burn.block_timestamp,
+  core.v3_pool_burn.transaction_hash,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN ABS(core.v3_pool_burn.amount0)
+    ELSE ABS(core.v3_pool_burn.amount1)
+  END                                                           AS stablecoin_amount,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN ABS(core.v3_pool_burn.amount1)
+    ELSE ABS(core.v3_pool_burn.amount0)
+  END                                                           AS token_amount
+FROM core.v3_pool_burn
+JOIN whitelisted_pool_view
+ON LOWER(core.v3_pool_burn.address) = LOWER(whitelisted_pool_view.pool_address)
+AND whitelisted_pool_view.version = 'v3';
+
+ALTER VIEW liquidity_transaction_view OWNER TO writeuser;
+
+CREATE OR REPLACE VIEW swap_transaction_view
+AS
+SELECT
+  'v2'                                                          AS version,
+  core.v2_pair_swap.transaction_sender                          AS account,
+  whitelisted_pool_view.pool_address,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN whitelisted_pool_view.token0
+    ELSE whitelisted_pool_view.token1
+  END                                                           AS stablecoin,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN whitelisted_pool_view.token1
+    ELSE whitelisted_pool_view.token0
+  END                                                           AS token,
+  env(CONCAT(whitelisted_pool_view.pool_address, ':name'))      AS pool_name,
+  core.v2_pair_swap.block_timestamp,
+  core.v2_pair_swap.transaction_hash,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN ABS
+    (
+      CASE
+        WHEN core.v2_pair_swap.amount0_in IS NULL
+        THEN core.v2_pair_swap.amount0_out
+        WHEN core.v2_pair_swap.amount0_in = 0
+        THEN core.v2_pair_swap.amount0_out
+        ELSE core.v2_pair_swap.amount0_in
+      END
+    )
+    ELSE ABS
+    (
+      CASE
+        WHEN core.v2_pair_swap.amount1_in IS NULL
+        THEN core.v2_pair_swap.amount1_out
+        WHEN core.v2_pair_swap.amount1_in = 0
+        THEN core.v2_pair_swap.amount1_out
+        ELSE core.v2_pair_swap.amount1_in
+      END
+    )
+  END                                                           AS stablecoin_amount,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN ABS
+    (
+      CASE
+        WHEN core.v2_pair_swap.amount1_in IS NULL
+        THEN core.v2_pair_swap.amount1_out
+        WHEN core.v2_pair_swap.amount1_in = 0
+        THEN core.v2_pair_swap.amount1_out
+        ELSE core.v2_pair_swap.amount1_in
+      END
+    )
+    ELSE ABS
+    (
+      CASE
+        WHEN core.v2_pair_swap.amount0_in IS NULL
+        THEN core.v2_pair_swap.amount0_out
+        WHEN core.v2_pair_swap.amount0_in = 0
+        THEN core.v2_pair_swap.amount0_out
+        ELSE core.v2_pair_swap.amount0_in
+      END
+    )
+  END                                                           AS token_amount
+FROM core.v2_pair_swap
+INNER JOIN whitelisted_pool_view
+ON LOWER(core.v2_pair_swap.address) = LOWER(whitelisted_pool_view.pool_address)
+AND whitelisted_pool_view.version = 'v2'
+
+UNION ALL
+
+SELECT
+  'v3'                                                          AS version,
+  core.v3_pool_swap.transaction_sender                          AS account,
+  whitelisted_pool_view.pool_address,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN whitelisted_pool_view.token0
+    ELSE whitelisted_pool_view.token1
+  END                                                           AS stablecoin,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN whitelisted_pool_view.token1
+    ELSE whitelisted_pool_view.token0
+  END                                                           AS token,
+  env(CONCAT(whitelisted_pool_view.pool_address, ':name'))      AS pool_name,
+  core.v3_pool_swap.block_timestamp,
+  core.v3_pool_swap.transaction_hash,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN ABS(core.v3_pool_swap.amount0)
+    ELSE ABS(core.v3_pool_swap.amount1)
+  END                                                           AS stablecoin_amount,
+  CASE
+    WHEN whitelisted_pool_view.token0_is_stablecoin
+    THEN ABS(core.v3_pool_swap.amount1)
+    ELSE ABS(core.v3_pool_swap.amount0)
+  END                                                           AS token_amount
+FROM core.v3_pool_swap
+JOIN whitelisted_pool_view
+ON LOWER(core.v3_pool_swap.address) = LOWER(whitelisted_pool_view.pool_address)
+AND whitelisted_pool_view.version = 'v3';
+
+ALTER VIEW swap_transaction_view OWNER TO writeuser;
+
+CREATE OR REPLACE VIEW swap_point_view
+AS
+WITH swap_transactions
+AS
+(
+  SELECT
+    version,
+    account,
+    pool_address,
+    pool_name,
+    block_timestamp,
+    transaction_hash,
+    (stablecoin_amount * 2) / POWER(10, env(CONCAT(stablecoin, ':decimals'))::numeric) AS amount
+  FROM swap_transaction_view
+)
+SELECT
+  version,
+  'swap'                                        AS action,
+  account,
+  pool_address,
+  pool_name,
+  block_timestamp,
+  transaction_hash,
+  amount,
+  amount * env('swap:point')::numeric           AS points,
+  CASE
+    WHEN get_account_by_user_id(get_referrer(account)) IS NULL
+    THEN NULL
+    ELSE amount * env('swap:point')::numeric * env('referral:points')::numeric
+  END                                           AS referral_points,
+  get_account_by_user_id(get_referrer(account)) AS referrer
+FROM swap_transactions;
+
+ALTER VIEW swap_point_view OWNER TO writeuser;
+
+CREATE OR REPLACE VIEW swap_account_summary_view
+AS
+SELECT
+  account,
+  referrer,
+  SUM(amount)           AS amount,
+  SUM(points)           AS points,
+  SUM(referral_points)  AS referral_points
+FROM swap_point_view
+GROUP BY account, referrer;
+
+ALTER VIEW swap_account_summary_view OWNER TO writeuser;
+
+CREATE OR REPLACE VIEW liquidity_point_view
+AS
+WITH stage1
+AS
+(
+  SELECT
+    version,
+    action,
+    account,
+    pool_address,
+    pool_name,
+    block_timestamp,
+    transaction_hash,
+    to_timestamp(block_timestamp)                                                                                                           AS date,
+    (stablecoin_amount * 2) / POWER(10, env(CONCAT(stablecoin, ':decimals'))::numeric)                                                      AS amount,
+    ROW_NUMBER() OVER (PARTITION BY account, version, pool_address ORDER BY to_timestamp(block_timestamp))                                  AS row_num,
+    LEAD(to_timestamp(block_timestamp), 1, NOW()) OVER (PARTITION BY account, version, pool_address ORDER BY to_timestamp(block_timestamp)) AS next_date
+  FROM liquidity_transaction_view
+),
+balances
+AS
+(
+  SELECT
+    version,
+    action,
+    account,
+    pool_address,
+    pool_name,
+    block_timestamp,
+    transaction_hash,
+    date,
+    amount,
+    next_date,
+    CASE
+      WHEN action = 'add'
+      THEN amount
+      ELSE -amount
+    END AS balance_change
+  FROM stage1
+),
+cumulative
+AS
+(
+  SELECT
+    version,
+    action,
+    account,
+    pool_address,
+    pool_name,
+    block_timestamp,
+    transaction_hash,
+    date,
+    amount,
+    next_date,
+    SUM(balance_change) OVER (PARTITION BY account ORDER BY date) AS balance,
+    next_date - date                                              AS total_duration
+  FROM balances
+)
+SELECT
+  version,
+  action,
+  account,
+  pool_address,
+  pool_name,
+  block_timestamp,
+  transaction_hash,
+  amount,
+  date,
+  balance,
+  EXTRACT(EPOCH FROM total_duration) / 86400                      AS days,
+  balance * env('liquidity:point')::numeric                       AS points,
+  CASE
+    WHEN get_account_by_user_id(get_referrer(account)) IS NULL
+    THEN NULL
+    ELSE balance * env('liquidity:point')::numeric * env('referral:points')::numeric
+  END                                                             AS referral_points,
+  get_account_by_user_id(get_referrer(account))                   AS referrer
+FROM cumulative;
+
+ALTER VIEW liquidity_point_view OWNER TO writeuser;
+
+CREATE OR REPLACE VIEW liquidity_account_summary_view
+AS
+SELECT
+  account,
+  referrer,
+  SUM(amount)           AS amount,
+  SUM(points)           AS points,
+  SUM(referral_points)  AS referral_points
+FROM liquidity_point_view
+GROUP BY account, referrer;
+
+ALTER VIEW liquidity_account_summary_view OWNER TO writeuser;
 
 CREATE SCHEMA IF NOT EXISTS meta;
 
