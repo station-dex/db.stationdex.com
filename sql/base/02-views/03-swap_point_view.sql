@@ -5,16 +5,18 @@ AS
 (
   SELECT
     version,
+    chain_id,
     account,
     pool_address,
     pool_name,
     block_timestamp,
     transaction_hash,
-    (stablecoin_amount * 2) / POWER(10, env(CONCAT(stablecoin, ':decimals'))::numeric) AS amount
+    (stablecoin_amount * 2) / POWER(10, env(CONCAT(chain_id, ':', stablecoin, ':decimals'))::numeric) AS amount
   FROM swap_transaction_view
 )
 SELECT
   version,
+  chain_id,
   'swap'                                        AS action,
   account,
   pool_address,
