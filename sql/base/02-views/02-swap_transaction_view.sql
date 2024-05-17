@@ -15,7 +15,16 @@ SELECT
     THEN whitelisted_pool_view.token1
     ELSE whitelisted_pool_view.token0
   END                                                           AS token,
-  env(CONCAT(core.v2_pair_swap.chain_id, ':',whitelisted_pool_view.pool_address, ':name'))      AS pool_name,
+  env
+  (
+    CONCAT
+    (
+      core.v2_pair_swap.chain_id,
+      ':',
+      whitelisted_pool_view.pool_address,
+      ':name'
+    )
+  )                                                             AS pool_name,
   core.v2_pair_swap.block_timestamp,
   core.v2_pair_swap.transaction_hash,
   CASE
@@ -68,6 +77,7 @@ FROM core.v2_pair_swap
 INNER JOIN whitelisted_pool_view
 ON  1 = 1
 AND core.v2_pair_swap.chain_id        = whitelisted_pool_view.chain_id
+AND LOWER(core.v2_pair_swap.contract) = ANY(LOWER(env(CONCAT(core.v2_pair_swap.chain_id, ':contracts')))::text[])
 AND LOWER(core.v2_pair_swap.address)  = LOWER(whitelisted_pool_view.pool_address)
 AND whitelisted_pool_view.version     = 'v2'
 
@@ -88,7 +98,16 @@ SELECT
     THEN whitelisted_pool_view.token1
     ELSE whitelisted_pool_view.token0
   END                                                           AS token,
-  env(CONCAT(core.v3_pool_swap.chain_id, ':',whitelisted_pool_view.pool_address, ':name'))      AS pool_name,
+  env
+  (
+    CONCAT
+    (
+      core.v3_pool_swap.chain_id,
+      ':',
+      whitelisted_pool_view.pool_address,
+      ':name'
+    )
+  )                                                             AS pool_name,
   core.v3_pool_swap.block_timestamp,
   core.v3_pool_swap.transaction_hash,
   CASE
@@ -105,7 +124,8 @@ FROM core.v3_pool_swap
 JOIN whitelisted_pool_view
 ON  1 = 1
 AND core.v3_pool_swap.chain_id        = whitelisted_pool_view.chain_id
+AND LOWER(core.v3_pool_swap.contract) = ANY(LOWER(env(CONCAT(core.v3_pool_swap.chain_id, ':contracts')))::text[])
 AND LOWER(core.v3_pool_swap.address)  = LOWER(whitelisted_pool_view.pool_address)
-AND whitelisted_pool_view.version =    'v3';
+AND whitelisted_pool_view.version     = 'v3';
 
 ALTER VIEW swap_transaction_view OWNER TO writeuser;

@@ -2,9 +2,9 @@ DELETE FROM environment_variables;
 
 -- common
 
-SELECT env('swap:point',                                            '15');
-SELECT env('liquidity:point',                                       '1');
-SELECT env('referral:points',                                       '0.1');
+SELECT env('swap:point',                                                '15');
+SELECT env('liquidity:point',                                           '1');
+SELECT env('referral:points',                                           '0.1');
 
 -- X Layer Mainnet: 196
 
@@ -26,6 +26,7 @@ SELECT env('196:0x1e4a5963abfd975d8c9021ce480b42188849d41d:decimals',   '6');
 SELECT env('196:0xe538905cf8410324e03a5a23c1c177a474d59b2b:decimals',   '18');
 SELECT env('196:0x5a77f1443d16ee5761d310e38b62f77f726bc71c:decimals',   '18');
 
+SELECT env('196:contracts', '{0xa91f3e6935859d3333c4e528e74f3284124dcf51,0x90Abedb3F1d1ea4f945153440Db7AC8B74e81BAc ,0xf89f39e39cf07f6862c084c2e1dbc913b521263a ,0xfcf21d9dcf4f6a5abcc04176cddbd1414f4a3798 ,0x11e7c6ff7ad159e179023bb771aec61db6d9234d ,0xdd26d766020665f0e7c0d35532cf11ee8ed29d5a}');
 
 -- X Layer Testnet: 195
 
@@ -46,4 +47,6 @@ SELECT env('195:0x26f007e7c978856a70f8d2e8a79300496e96a1ba:name',       'v3:USDC
 SELECT env('195:0x0f532a02503bce28444ce6d4ccc163cc1e2e56a6:decimals',   '18');
 SELECT env('195:0xeb45D32425a02a5A9d8500375932f1cCe5781b96:decimals',   '18');
 SELECT env('195:0x7bba099eb3050880dbbc1b42eb7ef8a3ff1eb248:decimals',   '6');
+
+SELECT env('195:contracts', '{0x5182e0fcb8619f41c0f40da342b4dc82c088f5e5, 0xa639d6f6437a487201f414d787fdcacfa627b007, 0x0623806922db8bfe8a5d0996c73ea2fb5999ee82, 0x6e19cb93b94433f59a3257b6e995b95e655e09a2}');
 
