@@ -3,6 +3,7 @@ AS
 SELECT
   'v2'                                                          AS version,
   core.v2_pair_swap.transaction_sender                          AS account,
+  core.v2_pair_swap.chain_id                                    AS chain_id,
   whitelisted_pool_view.pool_address,
   CASE
     WHEN whitelisted_pool_view.token0_is_stablecoin
@@ -14,7 +15,16 @@ SELECT
     THEN whitelisted_pool_view.token1
     ELSE whitelisted_pool_view.token0
   END                                                           AS token,
-  env(CONCAT(whitelisted_pool_view.pool_address, ':name'))      AS pool_name,
+  env
+  (
+    CONCAT
+    (
+      core.v2_pair_swap.chain_id,
+      ':',
+      whitelisted_pool_view.pool_address,
+      ':name'
+    )
+  )                                                             AS pool_name,
   core.v2_pair_swap.block_timestamp,
   core.v2_pair_swap.transaction_hash,
   CASE
@@ -65,14 +75,18 @@ SELECT
   END                                                           AS token_amount
 FROM core.v2_pair_swap
 INNER JOIN whitelisted_pool_view
-ON LOWER(core.v2_pair_swap.address) = LOWER(whitelisted_pool_view.pool_address)
-AND whitelisted_pool_view.version = 'v2'
+ON  1 = 1
+AND core.v2_pair_swap.chain_id        = whitelisted_pool_view.chain_id
+AND LOWER(core.v2_pair_swap.contract) = ANY(LOWER(env(CONCAT(core.v2_pair_swap.chain_id, ':contracts')))::text[])
+AND LOWER(core.v2_pair_swap.address)  = LOWER(whitelisted_pool_view.pool_address)
+AND whitelisted_pool_view.version     = 'v2'
 
 UNION ALL
 
 SELECT
   'v3'                                                          AS version,
   core.v3_pool_swap.transaction_sender                          AS account,
+  core.v3_pool_swap.chain_id                                    AS chain_id,
   whitelisted_pool_view.pool_address,
   CASE
     WHEN whitelisted_pool_view.token0_is_stablecoin
@@ -84,7 +98,16 @@ SELECT
     THEN whitelisted_pool_view.token1
     ELSE whitelisted_pool_view.token0
   END                                                           AS token,
-  env(CONCAT(whitelisted_pool_view.pool_address, ':name'))      AS pool_name,
+  env
+  (
+    CONCAT
+    (
+      core.v3_pool_swap.chain_id,
+      ':',
+      whitelisted_pool_view.pool_address,
+      ':name'
+    )
+  )                                                             AS pool_name,
   core.v3_pool_swap.block_timestamp,
   core.v3_pool_swap.transaction_hash,
   CASE
@@ -99,7 +122,10 @@ SELECT
   END                                                           AS token_amount
 FROM core.v3_pool_swap
 JOIN whitelisted_pool_view
-ON LOWER(core.v3_pool_swap.address) = LOWER(whitelisted_pool_view.pool_address)
-AND whitelisted_pool_view.version = 'v3';
+ON  1 = 1
+AND core.v3_pool_swap.chain_id        = whitelisted_pool_view.chain_id
+AND LOWER(core.v3_pool_swap.contract) = ANY(LOWER(env(CONCAT(core.v3_pool_swap.chain_id, ':contracts')))::text[])
+AND LOWER(core.v3_pool_swap.address)  = LOWER(whitelisted_pool_view.pool_address)
+AND whitelisted_pool_view.version     = 'v3';
 
 ALTER VIEW swap_transaction_view OWNER TO writeuser;
