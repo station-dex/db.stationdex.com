@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION get_name_by_login_id(_login_id uuid)
-RETURNS uuid
+RETURNS text
 STABLE PARALLEL SAFE
 AS
 $$
