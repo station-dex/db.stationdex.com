@@ -1,7 +1,6 @@
 CREATE OR REPLACE FUNCTION sign_in
 (
   _account                        text,
-  _name                           text,
   _referral_code                  text,
   _ip_address                     text,
   _user_agent                     jsonb,
@@ -43,8 +42,8 @@ BEGIN
   ) THEN
     _new_user := true;
 
-    INSERT INTO core.users(account, name, referral_id)
-    SELECT _account, _name, _referral_id;
+    INSERT INTO core.users(account, referral_id)
+    SELECT _account, _referral_id;
 
     /**
      * ----------------------------------------------------------------

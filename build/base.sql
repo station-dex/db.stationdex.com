@@ -222,7 +222,7 @@ LANGUAGE plpgsql;
 ALTER FUNCTION get_account_by_user_id(_user_id uuid) OWNER TO writeuser;
 
 CREATE OR REPLACE FUNCTION get_name_by_login_id(_login_id uuid)
-RETURNS uuid
+RETURNS text
 STABLE PARALLEL SAFE
 AS
 $$
@@ -235,13 +235,15 @@ LANGUAGE plpgsql;
 ALTER FUNCTION get_name_by_login_id OWNER TO writeuser;
 
 CREATE OR REPLACE FUNCTION get_name_by_user_id(_user_id uuid)
-RETURNS uuid
+RETURNS text
 STABLE PARALLEL SAFE
 AS
 $$
 BEGIN
-  RETURN core.users.name
+  RETURN core.monikers.name
   FROM core.users
+  INNER JOIN core.monikers
+  ON core.monikers.account = core.users.account
   WHERE 1 = 1
   AND core.users.user_id = _user_id;
 END
@@ -313,7 +315,6 @@ ALTER FUNCTION get_user_id_by_login_id OWNER TO writeuser;
 CREATE OR REPLACE FUNCTION sign_in
 (
   _account                        text,
-  _name                           text,
   _referral_code                  text,
   _ip_address                     text,
   _user_agent                     jsonb,
@@ -355,8 +356,8 @@ BEGIN
   ) THEN
     _new_user := true;
 
-    INSERT INTO core.users(account, name, referral_id)
-    SELECT _account, _name, _referral_id;
+    INSERT INTO core.users(account, referral_id)
+    SELECT _account, _referral_id;
 
     /**
      * ----------------------------------------------------------------
