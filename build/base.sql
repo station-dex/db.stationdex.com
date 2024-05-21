@@ -221,6 +221,21 @@ LANGUAGE plpgsql;
 
 ALTER FUNCTION get_account_by_user_id(_user_id uuid) OWNER TO writeuser;
 
+CREATE OR REPLACE FUNCTION get_name_by_account(_account text)
+RETURNS text
+STABLE PARALLEL SAFE
+AS
+$$
+BEGIN
+  RETURN core.monikers.name
+  FROM core.monikers
+  WHERE core.monikers.account = _account;
+END
+$$
+LANGUAGE plpgsql;
+
+ALTER FUNCTION get_name_by_account OWNER TO writeuser;
+
 CREATE OR REPLACE FUNCTION get_name_by_login_id(_login_id uuid)
 RETURNS text
 STABLE PARALLEL SAFE
@@ -924,6 +939,76 @@ FROM liquidity_point_view
 GROUP BY account, referrer;
 
 ALTER VIEW liquidity_account_summary_view OWNER TO writeuser;
+
+CREATE OR REPLACE VIEW point_detail_view
+AS
+SELECT version, chain_id, action, account, pool_name, block_timestamp, transaction_hash, amount, points
+FROM swap_point_view
+UNION ALL
+SELECT version, chain_id, action, account, pool_name, block_timestamp, transaction_hash, amount, points
+FROM liquidity_point_view;
+
+ALTER VIEW point_detail_view OWNER TO writeuser;
+
+CREATE OR REPLACE VIEW point_view
+AS
+WITH consolidated
+AS
+(
+  SELECT
+    account,
+    get_name_by_account(account) AS moniker,
+    SUM(points) as points
+  FROM liquidity_point_view
+  GROUP BY account
+  
+  UNION ALL
+  
+  SELECT
+    account,
+    get_name_by_account(account) AS moniker,
+    SUM(points) as points
+  FROM swap_point_view
+  GROUP BY account  
+),
+ranked
+AS
+(
+  SELECT
+    DENSE_RANK() OVER(ORDER BY points DESC, account ASC) AS rank,
+    moniker,
+    account,
+    points::numeric(20, 2)
+  FROM consolidated
+  ORDER BY points DESC 
+)
+SELECT * FROM ranked;
+
+
+ALTER VIEW point_view OWNER TO writeuser;
+
+CREATE OR REPLACE VIEW point_summary_view
+AS
+WITH summary
+AS
+(
+  SELECT
+    SUM(points) AS total,
+    COUNT(account) AS starfinders
+  FROM point_view
+),
+top_accounts
+AS
+(
+  SELECT * 
+  FROM point_view
+  ORDER BY rank ASC
+  LIMIT 3
+)
+SELECT * FROM top_accounts
+CROSS JOIN summary;
+
+ALTER VIEW point_summary_view OWNER TO writeuser;
 
 CREATE SCHEMA IF NOT EXISTS meta;
 
