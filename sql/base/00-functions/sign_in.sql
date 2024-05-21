@@ -6,7 +6,7 @@ CREATE OR REPLACE FUNCTION sign_in
   _user_agent                     jsonb,
   _browser                        text
 )
-RETURNS uuid
+RETURNS jsonb
 AS
 $$
   ----------------------------------------------------------------
@@ -19,6 +19,7 @@ $$
   DECLARE _login_id               uuid = uuid_generate_v4();
   DECLARE _login_count            integer;
   DECLARE _new_user               boolean = false;
+  DECLARE _moniker                text;
 BEGIN
   SELECT referral_id INTO _referral_id
   FROM core.referrals
@@ -105,7 +106,15 @@ BEGIN
   INSERT INTO core.logins(login_id, user_id, ip_address, user_agent, browser)
   SELECT _login_id, _user_id, _ip_address, _user_agent, _browser;
 
-  RETURN _login_id;
+  PERFORM generate_moniker(_account);
+
+  _moniker := get_name_by_user_id(_user_id);
+
+  RETURN jsonb_build_object
+  (
+    'loginId', _login_id,
+    'moniker', _moniker
+  );
 END
 $$
 LANGUAGE plpgsql;
