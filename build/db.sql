@@ -2013,9 +2013,7 @@ LANGUAGE plpgsql;
 
 ALTER FUNCTION get_user_id_by_login_id OWNER TO writeuser;
 
-DROP FUNCTION IF EXISTS quote_literal_ilike CASCADE;
-
-CREATE FUNCTION quote_literal_ilike(_ilike text)
+CREATE OR REPLACE FUNCTION quote_literal_ilike(_ilike text)
 RETURNS text
 IMMUTABLE
 AS
@@ -2025,6 +2023,8 @@ BEGIN
 END
 $$
 LANGUAGE plpgsql;
+
+ALTER FUNCTION quote_literal_ilike OWNER TO writeuser;
 
 CREATE OR REPLACE FUNCTION sign_in
 (
