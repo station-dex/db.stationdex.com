@@ -1704,7 +1704,8 @@ RETURNS TABLE
   total_records                                   integer,
   total_pages                                     integer,
   total_points                                    numeric,
-  rank                                            integer
+  rank                                            integer,
+  moniker                                         text
 )
 AS
 $$
@@ -1716,13 +1717,14 @@ $$
   DECLARE _total_pages                            integer;
   DECLARE _total_points                           numeric;
   DECLARE _rank                                   bigint;
+  DECLARE _moniker                                text;
 BEGIN
   IF _page_number < 1 THEN
     _page_number := 1;
   END IF;
 
-  SELECT point_view.points, point_view.rank
-  INTO _total_points, _rank
+  SELECT point_view.points, point_view.rank, point_view.moniker
+  INTO _total_points, _rank, _moniker
   FROM point_view
   WHERE point_view.account = _account;
 
@@ -1759,7 +1761,8 @@ BEGIN
           %s AS total_records,
           %s AS total_pages,
           %s AS total_points,
-          %s AS rank
+          %s AS rank,
+          %L AS moniker
         FROM result
         ORDER BY block_timestamp DESC
         LIMIT %s
@@ -1770,6 +1773,7 @@ BEGIN
         _total_pages,
         _total_points,
         _rank,
+        _moniker,
         _page_size, --limit
         _offset
       )
@@ -1783,6 +1787,7 @@ $$
 LANGUAGE plpgsql;
 
 ALTER FUNCTION get_point_detail OWNER TO writeuser;
+
 CREATE OR REPLACE FUNCTION get_points
 (
   _page_number                                    integer,
