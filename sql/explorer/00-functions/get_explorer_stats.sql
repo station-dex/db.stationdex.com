@@ -7,7 +7,7 @@ RETURNS TABLE
   total_swaps                                       numeric,
   liquidity_added                                   numeric,
   liquidity_removed                                 numeric,
-  average_transaction_fee                           numeric
+  average_gas_price                                 numeric
 )
 AS
 $$
@@ -19,7 +19,7 @@ BEGIN
     total_swaps                                       numeric,
     liquidity_added                                   numeric,
     liquidity_removed                                 numeric,
-    average_transaction_fee                           numeric
+    average_gas_price                                 numeric
   ) ON COMMIT DROP;
   
   INSERT INTO _get_explorer_stats_result(transaction_count)
@@ -50,7 +50,7 @@ BEGIN
   ), 0);
 
   UPDATE _get_explorer_stats_result
-  SET average_transaction_fee = 
+  SET average_gas_price = 
   COALESCE((
     SELECT AVG(get_stablecoin_value(core.transactions.chain_id, core.transactions.gas_price))
     FROM core.transactions
