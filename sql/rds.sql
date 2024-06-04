@@ -101,12 +101,6 @@ END
 $$
 LANGUAGE plpgsql;
 
-CREATE TABLE core.locks
-(
-  namespace                                         text NOT NULL PRIMARY KEY,
-  started_on                                        integer NOT NULL DEFAULT(extract(epoch FROM NOW() AT TIME ZONE 'UTC'))
-);
-
 CREATE TABLE core.transactions
 (
   id                                                uuid PRIMARY KEY DEFAULT(gen_random_uuid()),
@@ -119,6 +113,7 @@ CREATE TABLE core.transactions
   transaction_sender                                address,
   chain_id                                          uint256 NOT NULL,
   gas_price                                         uint256,
+  interface_name                                    text,
   event_name                                        text
 );
 
