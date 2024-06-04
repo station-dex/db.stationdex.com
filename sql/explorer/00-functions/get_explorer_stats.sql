@@ -6,7 +6,8 @@ RETURNS TABLE
   transaction_count                                 integer,
   total_swaps                                       numeric,
   liquidity_added                                   numeric,
-  liquidity_removed                                 numeric
+  liquidity_removed                                 numeric,
+  average_transaction_fee                           numeric
 )
 AS
 $$
@@ -17,7 +18,8 @@ BEGIN
     transaction_count                                 integer,
     total_swaps                                       numeric,
     liquidity_added                                   numeric,
-    liquidity_removed                                 numeric
+    liquidity_removed                                 numeric,
+    average_transaction_fee                           numeric
   ) ON COMMIT DROP;
   
   INSERT INTO _get_explorer_stats_result(transaction_count)
@@ -45,6 +47,13 @@ BEGIN
     SELECT SUM(get_stablecoin_value(liquidity_transaction_view.chain_id, liquidity_transaction_view.stablecoin_amount))
     FROM liquidity_transaction_view
     WHERE action='remove'
+  ), 0);
+
+  UPDATE _get_explorer_stats_result
+  SET average_transaction_fee = 
+  COALESCE((
+    SELECT AVG(get_stablecoin_value(core.transactions.chain_id, core.transactions.gas_price))
+    FROM core.transactions
   ), 0);
   
   RETURN QUERY
