@@ -3,11 +3,12 @@ DROP FUNCTION IF EXISTS get_explorer_stats();
 CREATE FUNCTION get_explorer_stats()
 RETURNS TABLE
 (
-  transaction_count                                 integer,
-  total_swaps                                       numeric,
-  liquidity_added                                   numeric,
-  liquidity_removed                                 numeric,
-  average_gas_price                                 numeric
+  transaction_count                                   integer,
+  total_swaps                                         numeric,
+  liquidity_added                                     numeric,
+  liquidity_removed                                   numeric,
+  average_gas_price                                   numeric,
+  average_gas_price_today                             numeric
 )
 AS
 $$
@@ -19,7 +20,8 @@ BEGIN
     total_swaps                                       numeric,
     liquidity_added                                   numeric,
     liquidity_removed                                 numeric,
-    average_gas_price                                 numeric
+    average_gas_price                                 numeric,
+    average_gas_price_today                           numeric
   ) ON COMMIT DROP;
   
   INSERT INTO _get_explorer_stats_result(transaction_count)
@@ -29,14 +31,14 @@ BEGIN
   UPDATE _get_explorer_stats_result
   SET total_swaps = 
   COALESCE((
-    SELECT SUM(get_stablecoin_value(swap_transaction_view.chain_id, swap_transaction_view.stablecoin_amount))
+    SELECT COUNT(*)
     FROM swap_transaction_view
   ), 0);
   
   UPDATE _get_explorer_stats_result
   SET liquidity_added =
   COALESCE((
-    SELECT SUM(get_stablecoin_value(liquidity_transaction_view.chain_id, liquidity_transaction_view.stablecoin_amount))
+    SELECT COUNT(*)
     FROM liquidity_transaction_view
     WHERE action='add'
   ), 0);
@@ -44,7 +46,7 @@ BEGIN
   UPDATE _get_explorer_stats_result
   SET liquidity_removed =
   COALESCE((
-    SELECT SUM(get_stablecoin_value(liquidity_transaction_view.chain_id, liquidity_transaction_view.stablecoin_amount))
+    SELECT COUNT(*)
     FROM liquidity_transaction_view
     WHERE action='remove'
   ), 0);
@@ -52,8 +54,16 @@ BEGIN
   UPDATE _get_explorer_stats_result
   SET average_gas_price = 
   COALESCE((
-    SELECT AVG(get_stablecoin_value(core.transactions.chain_id, core.transactions.gas_price))
+    SELECT AVG(core.transactions.gas_price)
     FROM core.transactions
+  ), 0);
+
+  UPDATE _get_explorer_stats_result
+  SET average_gas_price_today = 
+  COALESCE((
+    SELECT AVG(core.transactions.gas_price)
+    FROM core.transactions
+    WHERE block_timestamp > CEILING(EXTRACT(EPOCH FROM NOW()) - 86400) -- last 24h only
   ), 0);
   
   RETURN QUERY

@@ -49,7 +49,7 @@ BEGIN
     _contracts := array_agg(DISTINCT core.transactions.address) FROM core.transactions;  
   END IF;
 
-  IF (_sort_by NOT IN('chain_id', 'date', 'event_name', 'coupon_code', 'transaction_sender', 'ck', 'pk')) THEN
+  IF(_sort_by NOT IN('chain_id', 'date', 'event_name', 'transaction_sender', 'contract', 'block_number', 'transaction_hash')) THEN
     RAISE EXCEPTION 'Access is denied. Invalid sort_by: "%"', _sort_by; --SQL Injection Attack
   END IF;
   
@@ -71,8 +71,8 @@ BEGIN
   (
     SELECT * FROM core.transactions
     WHERE core.transactions.block_timestamp
-      BETWEEN EXTRACT(epoch FROM COALESCE(%L, ''1-1-1990''::date))
-      AND EXTRACT(epoch FROM COALESCE(%L, ''1-1-2990''::date))
+      BETWEEN EXTRACT(epoch FROM COALESCE(%L, ''-infinity''::date))
+      AND EXTRACT(epoch FROM COALESCE(%L, ''infinity''::date))
     AND core.transactions.chain_id = ANY(%L)
     AND core.transactions.address = ANY(%L)
     AND core.transactions.event_name ILIKE %s
@@ -88,20 +88,20 @@ BEGIN
   
   _total_pages = COALESCE(CEILING(_total_records::numeric / _page_size), 0);
   
-   _query := format('
-    SELECT
-    core.transactions.id,
-    core.transactions.chain_id,
-    to_timestamp(core.transactions.block_timestamp)::TIMESTAMP WITH TIME ZONE AS date,
-    core.transactions.event_name,
-    core.transactions.transaction_sender,
-    core.transactions.contract,
-    core.transactions.transaction_hash,
-    core.transactions.block_number,
-    %s AS page_size,
-    %s AS page_number,
-    %s AS total_records,
-    %s AS total_pages
+  _query := format('
+  SELECT
+  core.transactions.id,
+  core.transactions.chain_id,
+  to_timestamp(core.transactions.block_timestamp)::TIMESTAMP WITH TIME ZONE AS date,
+  core.transactions.event_name,
+  core.transactions.transaction_sender,
+  core.transactions.contract,
+  core.transactions.transaction_hash,
+  core.transactions.block_number,
+  %s AS page_size,
+  %s AS page_number,
+  %s AS total_records,
+  %s AS total_pages
   FROM core.transactions
   WHERE core.transactions.block_timestamp
     BETWEEN EXTRACT(epoch FROM COALESCE(%L, ''1-1-1990''::date))
@@ -121,20 +121,7 @@ END
 $$
 LANGUAGE plpgsql;
 
-
-ALTER FUNCTION get_explorer_home
-(
-  text,
-  text,
-  integer,
-  integer,
-  TIMESTAMP WITH TIME ZONE,
-  TIMESTAMP WITH TIME ZONE,
-  numeric[],
-  text[],
-  text,
-  text
-) OWNER TO writeuser;
+ALTER FUNCTION get_explorer_home OWNER TO writeuser;
 
 
 -- DROP FUNCTION get_explorer_home
