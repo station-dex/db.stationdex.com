@@ -12,6 +12,7 @@ BEGIN
 	  COUNT(*) > 0
   FROM core.referrals
   WHERE 1=1
+  AND deleted IS NOT TRUE
   AND referral_code=%s', quote_literal(_referral_code));
 
   EXECUTE _query INTO _valid;
