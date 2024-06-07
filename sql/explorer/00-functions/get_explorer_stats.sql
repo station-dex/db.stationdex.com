@@ -29,42 +29,57 @@ BEGIN
   FROM core.transactions;
   
   UPDATE _get_explorer_stats_result
-  SET total_swaps = 
-  COALESCE((
-    SELECT COUNT(*)
-    FROM swap_transaction_view
-  ), 0);
+  SET total_swaps = COALESCE
+    (
+      (
+        SELECT COUNT(*)
+        FROM swap_transaction_view
+      ),
+      0
+    );
   
   UPDATE _get_explorer_stats_result
-  SET liquidity_added =
-  COALESCE((
-    SELECT COUNT(*)
-    FROM liquidity_transaction_view
-    WHERE action='add'
-  ), 0);
+  SET liquidity_added = COALESCE
+    (
+      (
+        SELECT COUNT(*)
+        FROM liquidity_transaction_view
+        WHERE action='add'
+      ), 
+      0
+    );
   
   UPDATE _get_explorer_stats_result
-  SET liquidity_removed =
-  COALESCE((
-    SELECT COUNT(*)
-    FROM liquidity_transaction_view
-    WHERE action='remove'
-  ), 0);
+  SET liquidity_removed = COALESCE
+    (
+      (
+        SELECT COUNT(*)
+        FROM liquidity_transaction_view
+        WHERE action='remove'
+      ), 
+    0
+    );
 
   UPDATE _get_explorer_stats_result
-  SET average_gas_price = 
-  COALESCE((
-    SELECT AVG(core.transactions.gas_price)
-    FROM core.transactions
-  ), 0);
+  SET average_gas_price = COALESCE
+    (
+      (
+        SELECT AVG(core.transactions.gas_price)
+        FROM core.transactions
+      ), 
+      0
+    );
 
   UPDATE _get_explorer_stats_result
-  SET average_gas_price_today = 
-  COALESCE((
-    SELECT AVG(core.transactions.gas_price)
-    FROM core.transactions
-    WHERE block_timestamp > CEILING(EXTRACT(EPOCH FROM NOW()) - 86400) -- last 24h only
-  ), 0);
+  SET average_gas_price_today = COALESCE
+    (
+      (
+        SELECT AVG(core.transactions.gas_price)
+        FROM core.transactions
+        WHERE block_timestamp > CEILING(EXTRACT(EPOCH FROM NOW()) - 86400) -- last 24h only
+      ), 
+    0
+    );
   
   RETURN QUERY
   SELECT * FROM _get_explorer_stats_result;

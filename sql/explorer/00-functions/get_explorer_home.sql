@@ -9,7 +9,9 @@ CREATE OR REPLACE FUNCTION get_explorer_home
   _networks                                       numeric[],
   _contracts                                      text[],
   _event_name_like                                text,
-  _transaction_sender_like                        text
+  _transaction_sender_like                        text,
+  _transaction_hash_like                          text,
+  _block_number_like                              text
 )
 RETURNS TABLE
 (
@@ -77,8 +79,10 @@ BEGIN
     AND core.transactions.address = ANY(%L)
     AND core.transactions.event_name ILIKE %s
     AND core.transactions.transaction_sender ILIKE %s
+    AND core.transactions.transaction_hash ILIKE %s
+    AND core.transactions.block_number ILIKE %s
   )
-  SELECT COUNT(*) FROM result;', _date_from, _date_to, _networks, _contracts, quote_literal_ilike(_event_name_like), quote_literal_ilike(_transaction_sender_like));
+  SELECT COUNT(*) FROM result;', _date_from, _date_to, _networks, _contracts, quote_literal_ilike(_event_name_like), quote_literal_ilike(_transaction_sender_like), quote_literal_ilike(_transaction_hash_like), quote_literal_ilike(_block_number_like));
   
   -- RAISE NOTICE '%', _query;
 
@@ -110,10 +114,12 @@ BEGIN
   AND core.transactions.address = ANY(%L)
   AND core.transactions.event_name ILIKE %s
   AND core.transactions.transaction_sender ILIKE %s
+  AND core.transactions.transaction_hash ILIKE %s
+  AND core.transactions.block_number ILIKE %s
   ORDER BY %I %s
   LIMIT %s::integer
   OFFSET %s::integer * %s::integer  
-  ', _page_size, _page_number, _total_records, _total_pages, _date_from, _date_to, _networks, _contracts, quote_literal_ilike(_event_name_like), quote_literal_ilike(_transaction_sender_like), _sort_by, _sort_direction, _page_size, _page_number - 1, _page_size);
+  ', _page_size, _page_number, _total_records, _total_pages, _date_from, _date_to, _networks, _contracts, quote_literal_ilike(_event_name_like), quote_literal_ilike(_transaction_sender_like), quote_literal_ilike(_transaction_hash_like), quote_literal_ilike(_block_number_like), _sort_by, _sort_direction, _page_size, _page_number - 1, _page_size);
 
   --RAISE NOTICE '%', _query;
   RETURN QUERY EXECUTE _query;
@@ -135,6 +141,8 @@ ALTER FUNCTION get_explorer_home OWNER TO writeuser;
 --   numeric[],
 --   text[],
 --   text,
+--   text,
+--   text,
 --   text
 -- );
 
@@ -149,5 +157,7 @@ ALTER FUNCTION get_explorer_home OWNER TO writeuser;
 --   NULL,             --_networks                                       numeric[],
 --   NULL,             --_contracts                                      text[],
 --   '',               --_event_name_like                                text,
---   ''                --_transaction_sender_like                        text
+--   '',               --_transaction_sender_like                        text
+--   '',               --_transaction_hash_like                          text
+--   ''                --_block_number_like                              text
 -- );
