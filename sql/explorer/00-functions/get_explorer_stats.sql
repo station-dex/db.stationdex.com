@@ -23,7 +23,7 @@ BEGIN
   ) ON COMMIT DROP;
   
   INSERT INTO _get_explorer_stats_result(transaction_count)
-  SELECT COUNT(*)
+  SELECT COUNT(DISTINCT transaction_hash)
   FROM core.transactions;
   
   WITH
@@ -94,8 +94,8 @@ BEGIN
         FROM core.transactions
         WHERE block_timestamp 
         BETWEEN 
-          CEILING(EXTRACT(EPOCH FROM NOW()) - 2 * 86400) 
-          AND CEILING(EXTRACT(EPOCH FROM NOW()) - 86400)
+          CEILING(EXTRACT(EPOCH FROM NOW() - INTERVAL '2 days')) 
+          AND CEILING(EXTRACT(EPOCH FROM NOW() - INTERVAL '1 day'))
       ), 
     0
     );
@@ -106,7 +106,7 @@ BEGIN
       (
         SELECT AVG(core.transactions.gas_price)
         FROM core.transactions
-        WHERE block_timestamp > CEILING(EXTRACT(EPOCH FROM NOW()) - 86400) -- last 24h only
+        WHERE block_timestamp > CEILING(EXTRACT(EPOCH FROM NOW() - INTERVAL '1 day'))
       ), 
     0
     );

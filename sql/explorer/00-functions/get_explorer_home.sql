@@ -92,18 +92,18 @@ BEGIN
   
   _query := format('
   SELECT
-  core.transactions.id,
-  core.transactions.chain_id,
-  to_timestamp(core.transactions.block_timestamp)::TIMESTAMP WITH TIME ZONE AS date,
-  core.transactions.event_name,
-  core.transactions.transaction_sender,
-  core.transactions.contract,
-  core.transactions.transaction_hash,
-  core.transactions.block_number,
-  %s AS page_size,
-  %s AS page_number,
-  %s AS total_records,
-  %s AS total_pages
+    core.transactions.id,
+    core.transactions.chain_id,
+    to_timestamp(core.transactions.block_timestamp)::TIMESTAMP WITH TIME ZONE AS date,
+    core.transactions.event_name,
+    core.transactions.transaction_sender,
+    core.transactions.contract,
+    core.transactions.transaction_hash,
+    core.transactions.block_number,
+    %s                                                                  AS page_size,
+    %s                                                                  AS page_number,
+    %s                                                                  AS total_records,
+    %s                                                                  AS total_pages
   FROM core.transactions
   WHERE core.transactions.block_timestamp
   BETWEEN 
