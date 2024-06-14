@@ -1,4 +1,4 @@
-CREATE MATERIALIZED VIEW IF NOT EXISTS whitelisted_pool_view
+CREATE OR REPLACE VIEW whitelisted_pool_view
 AS
 WITH whitelisted_pools
 AS
@@ -59,4 +59,4 @@ AS
 )
 SELECT * FROM whitelisted_pools;
 
-ALTER MATERIALIZED VIEW whitelisted_pool_view OWNER TO writeuser;
+ALTER VIEW whitelisted_pool_view OWNER TO writeuser;

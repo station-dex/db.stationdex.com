@@ -1,23 +1,21 @@
 CREATE OR REPLACE VIEW point_view
 AS
-WITH consolidated
+WITH combined
+AS
+(
+  SELECT account, points FROM liquidity_point_view
+  UNION ALL
+  SELECT account, points FROM swap_point_view
+),
+consolidated
 AS
 (
   SELECT
     account,
-    get_name_by_account(account) AS moniker,
-    SUM(points) as points
-  FROM liquidity_point_view
+    get_name_by_account(account)  AS moniker,
+    SUM(points)                   AS points
+  FROM combined
   GROUP BY account
-  
-  UNION ALL
-  
-  SELECT
-    account,
-    get_name_by_account(account) AS moniker,
-    SUM(points) as points
-  FROM swap_point_view
-  GROUP BY account  
 ),
 ranked
 AS
@@ -28,9 +26,8 @@ AS
     account,
     points::numeric(20, 2)
   FROM consolidated
-  ORDER BY points DESC 
+  ORDER BY points DESC
 )
 SELECT * FROM ranked;
-
 
 ALTER VIEW point_view OWNER TO writeuser;
