@@ -18,7 +18,8 @@ $$
   DECLARE _query                                  text;
   DECLARE _referrer_id                            uuid = get_user_id_by_login_id(_login_id);
 BEGIN
-  _query := format('SELECT
+  _query := format('
+    SELECT
       referral_id,
       memo,
       referral_code,

@@ -1,25 +1,32 @@
 CREATE OR REPLACE VIEW referral_point_view
 AS
-WITH consolidated
-AS
+WITH result 
+AS 
 (
   SELECT
     account,
-    get_name_by_account(account) AS moniker,
-    SUM(points) as points,
-    SUM(referral_points) as referral_points
+    points                           AS points,
+    referral_points                  AS referral_points
   FROM liquidity_point_view
-  GROUP BY account
   
   UNION ALL
   
   SELECT
     account,
-    get_name_by_account(account) AS moniker,
-    SUM(points) as points,
-    SUM(referral_points) as referral_points
+    points                           AS points,
+    referral_points                  AS referral_points
   FROM swap_point_view
-  GROUP BY account  
+),
+consolidated
+AS
+(
+  SELECT
+    account,
+    get_name_by_account(account)     AS moniker,
+    SUM(points)                      AS points,
+    SUM(referral_points)             AS referral_points
+  FROM result
+  GROUP BY account
 ),
 with_referral_code
 AS
@@ -42,7 +49,7 @@ AS
         AND core.users.account=consolidated.account
       )
     ),
-	(
+	  (
       SELECT
         referrer
       FROM core.referrals 

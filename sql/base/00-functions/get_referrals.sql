@@ -56,7 +56,12 @@ BEGIN
       format
       (
         E'\tSELECT
-          *,
+          moniker,
+          account,
+          points::numeric(20, 2),
+          referral_points::numeric(20, 2),
+          referral_code,
+          referrer,
           %s AS page_size,
           %s AS page_number,
           %s AS total_records,
