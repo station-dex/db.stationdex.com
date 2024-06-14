@@ -1513,7 +1513,7 @@ SELECT env('195:0x7bba099eb3050880dbbc1b42eb7ef8a3ff1eb248:decimals',   '6');
 SELECT env('195:contracts', '{0x5182e0fcb8619f41c0f40da342b4dc82c088f5e5, 0xa639d6f6437a487201f414d787fdcacfa627b007, 0x0623806922db8bfe8a5d0996c73ea2fb5999ee82, 0x6e19cb93b94433f59a3257b6e995b95e655e09a2}');
 
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS whitelisted_pool_view
+CREATE OR REPLACE VIEW whitelisted_pool_view
 AS
 WITH whitelisted_pools
 AS
@@ -1574,7 +1574,7 @@ AS
 )
 SELECT * FROM whitelisted_pools;
 
-ALTER MATERIALIZED VIEW whitelisted_pool_view OWNER TO writeuser;
+ALTER VIEW whitelisted_pool_view OWNER TO writeuser;
 
 CREATE OR REPLACE FUNCTION create_referral
 (
