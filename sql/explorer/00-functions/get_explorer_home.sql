@@ -106,7 +106,8 @@ BEGIN
   %s AS total_pages
   FROM core.transactions
   WHERE core.transactions.block_timestamp
-    BETWEEN EXTRACT(epoch FROM COALESCE(%L, ''-infinity''::date))
+  BETWEEN 
+    EXTRACT(epoch FROM COALESCE(%L, ''-infinity''::date))
     AND EXTRACT(epoch FROM COALESCE(%L, ''infinity''::date))
   AND core.transactions.chain_id                                        = ANY(%L)
   AND core.transactions.address                                         = ANY(%L)
