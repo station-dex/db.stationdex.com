@@ -1,39 +1,39 @@
 CREATE OR REPLACE FUNCTION get_explorer_home
 (
-  _sort_by                                        text,
-  _sort_direction                                 text,
-  _page_number                                    integer,
-  _page_size                                      integer,
-  _date_from                                      TIMESTAMP WITH TIME ZONE,
-  _date_to                                        TIMESTAMP WITH TIME ZONE,
-  _networks                                       numeric[],
-  _contracts                                      text[],
-  _event_name_like                                text,
-  _transaction_sender_like                        text,
-  _transaction_hash_like                          text,
-  _block_number_like                              text
+  _sort_by                                                              text,
+  _sort_direction                                                       text,
+  _page_number                                                          integer,
+  _page_size                                                            integer,
+  _date_from                                                            TIMESTAMP WITH TIME ZONE,
+  _date_to                                                              TIMESTAMP WITH TIME ZONE,
+  _networks                                                             numeric[],
+  _contracts                                                            text[],
+  _event_name_like                                                      text,
+  _transaction_sender_like                                              text,
+  _transaction_hash_like                                                text,
+  _block_number_like                                                    text
 )
 RETURNS TABLE
 (
-  id                                              uuid,
-  chain_id                                        uint256,
-  date                                            TIMESTAMP WITH TIME ZONE,
-  event_name                                      text,
-  transaction_sender                              address,
-  contract                                        address,
-  transaction_hash                                text,
-  block_number                                    text,
-  page_size                                       integer,
-  page_number                                     integer,
-  total_records                                   integer,
-  total_pages                                     integer
+  id                                                                    uuid,
+  chain_id                                                              uint256,
+  date                                                                  TIMESTAMP WITH TIME ZONE,
+  event_name                                                            text,
+  transaction_sender                                                    address,
+  contract                                                              address,
+  transaction_hash                                                      text,
+  block_number                                                          text,
+  page_size                                                             integer,
+  page_number                                                           integer,
+  total_records                                                         integer,
+  total_pages                                                           integer
 )
 STABLE
 AS
 $$
-  DECLARE _total_records                          integer;
-  DECLARE _total_pages                            integer;
-  DECLARE _query                                  text;
+  DECLARE _total_records                                                integer;
+  DECLARE _total_pages                                                  integer;
+  DECLARE _query                                                        text;
 BEGIN
   IF(COALESCE(_sort_direction, '') = '') THEN
     _sort_direction := 'ASC';
@@ -73,22 +73,20 @@ BEGIN
   (
     SELECT * FROM core.transactions
     WHERE core.transactions.block_timestamp
-      BETWEEN EXTRACT(epoch FROM COALESCE(%L, ''-infinity''::date))
-      AND EXTRACT(epoch FROM COALESCE(%L, ''infinity''::date))
-    AND core.transactions.chain_id = ANY(%L)
-    AND core.transactions.address = ANY(%L)
-    AND core.transactions.event_name ILIKE %s
-    AND core.transactions.transaction_sender ILIKE %s
-    AND core.transactions.transaction_hash ILIKE %s
-    AND core.transactions.block_number ILIKE %s
+    BETWEEN
+      EXTRACT(epoch FROM COALESCE(%L, ''-infinity''::date))
+      AND EXTRACT(epoch FROM COALESCE(%L, ''infinity''::date))  
+    AND core.transactions.chain_id                                      = ANY(%L)
+    AND core.transactions.address                                       = ANY(%L)
+    AND core.transactions.event_name                                    ILIKE %s
+    AND core.transactions.transaction_sender                            ILIKE %s
+    AND core.transactions.transaction_hash                              ILIKE %s
+    AND core.transactions.block_number                                  ILIKE %s
   )
   SELECT COUNT(*) FROM result;', _date_from, _date_to, _networks, _contracts, quote_literal_ilike(_event_name_like), quote_literal_ilike(_transaction_sender_like), quote_literal_ilike(_transaction_hash_like), quote_literal_ilike(_block_number_like));
   
-  -- RAISE NOTICE '%', _query;
-
   EXECUTE _query
   INTO _total_records;
-  
   
   _total_pages = COALESCE(CEILING(_total_records::numeric / _page_size), 0);
   
@@ -108,20 +106,19 @@ BEGIN
   %s AS total_pages
   FROM core.transactions
   WHERE core.transactions.block_timestamp
-    BETWEEN EXTRACT(epoch FROM COALESCE(%L, ''1-1-1990''::date))
-    AND EXTRACT(epoch FROM COALESCE(%L, ''1-1-2990''::date))
-  AND core.transactions.chain_id = ANY(%L)
-  AND core.transactions.address = ANY(%L)
-  AND core.transactions.event_name ILIKE %s
-  AND core.transactions.transaction_sender ILIKE %s
-  AND core.transactions.transaction_hash ILIKE %s
-  AND core.transactions.block_number ILIKE %s
+    BETWEEN EXTRACT(epoch FROM COALESCE(%L, ''-infinity''::date))
+    AND EXTRACT(epoch FROM COALESCE(%L, ''infinity''::date))
+  AND core.transactions.chain_id                                        = ANY(%L)
+  AND core.transactions.address                                         = ANY(%L)
+  AND core.transactions.event_name                                      ILIKE %s
+  AND core.transactions.transaction_sender                              ILIKE %s
+  AND core.transactions.transaction_hash                                ILIKE %s
+  AND core.transactions.block_number                                    ILIKE %s
   ORDER BY %I %s
   LIMIT %s::integer
   OFFSET %s::integer * %s::integer  
   ', _page_size, _page_number, _total_records, _total_pages, _date_from, _date_to, _networks, _contracts, quote_literal_ilike(_event_name_like), quote_literal_ilike(_transaction_sender_like), quote_literal_ilike(_transaction_hash_like), quote_literal_ilike(_block_number_like), _sort_by, _sort_direction, _page_size, _page_number - 1, _page_size);
 
-  --RAISE NOTICE '%', _query;
   RETURN QUERY EXECUTE _query;
 END
 $$
@@ -129,35 +126,18 @@ LANGUAGE plpgsql;
 
 ALTER FUNCTION get_explorer_home OWNER TO writeuser;
 
-
--- DROP FUNCTION get_explorer_home
--- (
---   text,
---   text,
---   integer,
---   integer,
---   TIMESTAMP WITH TIME ZONE,
---   TIMESTAMP WITH TIME ZONE,
---   numeric[],
---   text[],
---   text,
---   text,
---   text,
---   text
--- );
-
 -- SELECT * FROM get_explorer_home
 -- (
---   'date',           --_sort_by                                        text,
---   'DESC',           --_sort_direction                                 text,
---   1,                --_page_number                                    integer,
---   2,                --_page_size                                      integer,
---   NULL,             --_date_from                                      TIMESTAMP WITH TIME ZONE,
---   '1-1-2099'::date, --_date_to                                        TIMESTAMP WITH TIME ZONE,
---   NULL,             --_networks                                       numeric[],
---   NULL,             --_contracts                                      text[],
---   '',               --_event_name_like                                text,
---   '',               --_transaction_sender_like                        text
---   '',               --_transaction_hash_like                          text
---   ''                --_block_number_like                              text
+--   'date',           --_sort_by                                       text,
+--   'DESC',           --_sort_direction                                text,
+--   1,                --_page_number                                   integer,
+--   2,                --_page_size                                     integer,
+--   NULL,             --_date_from                                     TIMESTAMP WITH TIME ZONE,
+--   '1-1-2099'::date, --_date_to                                       TIMESTAMP WITH TIME ZONE,
+--   NULL,             --_networks                                      numeric[],
+--   NULL,             --_contracts                                     text[],
+--   '',               --_event_name_like                               text,
+--   '',               --_transaction_sender_like                       text
+--   '',               --_transaction_hash_like                         text
+--   ''                --_block_number_like                             text
 -- );
