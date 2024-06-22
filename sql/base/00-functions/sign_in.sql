@@ -44,7 +44,7 @@ BEGIN
     _new_user := true;
 
     INSERT INTO core.users(account, referral_id)
-    SELECT _account, _referral_id;
+    SELECT LOWER(_account), _referral_id;
 
     /**
      * ----------------------------------------------------------------

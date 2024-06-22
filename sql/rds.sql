@@ -928,7 +928,7 @@ BEGIN
   END IF;
 
   INSERT INTO core.monikers(account, name)
-  SELECT _account, _moniker
+  SELECT LOWER(_account), _moniker
   ON CONFLICT DO NOTHING;
 END
 $$

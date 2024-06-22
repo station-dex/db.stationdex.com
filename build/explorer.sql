@@ -97,7 +97,7 @@ BEGIN
     to_timestamp(core.transactions.block_timestamp)::TIMESTAMP WITH TIME ZONE AS date,
     core.transactions.event_name,
     core.transactions.transaction_sender,
-    core.transactions.contract,
+    core.transactions.address,
     core.transactions.transaction_hash,
     core.transactions.block_number,
     %s                                                                  AS page_size,
