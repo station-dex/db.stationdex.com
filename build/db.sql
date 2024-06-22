@@ -928,7 +928,7 @@ BEGIN
   END IF;
 
   INSERT INTO core.monikers(account, name)
-  SELECT _account, _moniker
+  SELECT LOWER(_account), _moniker
   ON CONFLICT DO NOTHING;
 END
 $$
@@ -2072,7 +2072,7 @@ BEGIN
     _new_user := true;
 
     INSERT INTO core.users(account, referral_id)
-    SELECT _account, _referral_id;
+    SELECT LOWER(_account), _referral_id;
 
     /**
      * ----------------------------------------------------------------
@@ -2829,7 +2829,7 @@ BEGIN
     to_timestamp(core.transactions.block_timestamp)::TIMESTAMP WITH TIME ZONE AS date,
     core.transactions.event_name,
     core.transactions.transaction_sender,
-    core.transactions.contract,
+    core.transactions.address,
     core.transactions.transaction_hash,
     core.transactions.block_number,
     %s                                                                  AS page_size,
