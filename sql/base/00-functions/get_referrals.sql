@@ -12,6 +12,7 @@ RETURNS TABLE
   points                                          numeric,
   referral_points                                 numeric,
   referral_code                                   character varying(32),
+  referrer		                                    uuid,
   page_size                                       integer,
   page_number                                     integer,
   total_records                                   integer,
