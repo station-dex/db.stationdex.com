@@ -6,7 +6,7 @@ $$
 BEGIN
   RETURN core.monikers.name
   FROM core.monikers
-  WHERE core.monikers.account = _account;
+  WHERE LOWER(core.monikers.account) = LOWER(_account);
 END
 $$
 LANGUAGE plpgsql;

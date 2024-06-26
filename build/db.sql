@@ -1640,7 +1640,7 @@ $$
 BEGIN
   RETURN core.monikers.name
   FROM core.monikers
-  WHERE core.monikers.account = _account;
+  WHERE LOWER(core.monikers.account) = LOWER(_account);
 END
 $$
 LANGUAGE plpgsql;
@@ -2829,7 +2829,7 @@ BEGIN
     to_timestamp(core.transactions.block_timestamp)::TIMESTAMP WITH TIME ZONE AS date,
     core.transactions.event_name,
     core.transactions.transaction_sender,
-    core.transactions.contract,
+    core.transactions.address,
     core.transactions.transaction_hash,
     core.transactions.block_number,
     %s                                                                  AS page_size,
