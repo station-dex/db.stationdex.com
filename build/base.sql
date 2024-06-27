@@ -160,6 +160,32 @@ SELECT * FROM whitelisted_pools;
 
 ALTER MATERIALIZED VIEW whitelisted_pool_view OWNER TO writeuser;
 
+CREATE OR REPLACE FUNCTION check_referral_code
+(
+  _referral_code                                  text
+)
+RETURNS BOOLEAN
+AS
+$$
+  DECLARE _valid                                  boolean;
+  DECLARE _query                                  text;
+BEGIN
+  _query := format('
+  SELECT COUNT(*) > 0
+  FROM core.referrals
+  WHERE 1 = 1
+  AND deleted IS NOT TRUE
+  AND referral_code=%s', quote_literal(_referral_code));
+
+  EXECUTE _query INTO _valid;
+
+  RETURN _valid;
+END
+$$
+LANGUAGE plpgsql;
+
+ALTER FUNCTION check_referral_code OWNER TO writeuser;
+
 CREATE OR REPLACE FUNCTION create_referral
 (
   _login_id                       uuid,
@@ -294,6 +320,125 @@ LANGUAGE plpgsql;
 
 ALTER FUNCTION get_referral_code OWNER TO writeuser;
 
+CREATE OR REPLACE FUNCTION get_referral_summary
+(
+  _login_id                                       uuid,
+  _referral_code                                  text
+)
+RETURNS TABLE
+(
+  total_points                                    numeric,
+  total_referral_points                           numeric
+)
+AS
+$$
+  DECLARE _query                                  text;
+  DECLARE _referrer_id                            uuid = get_user_id_by_login_id(_login_id);
+BEGIN
+  _query := format('
+  SELECT
+    SUM(points)                                   AS total_points,
+    SUM(referral_points)                          AS total_referral_points
+  FROM referral_point_view
+  WHERE 1 = 1
+  AND referrer=%s
+  AND referral_code=%s', quote_literal(_referrer_id), quote_literal(_referral_code));
+
+  RETURN QUERY EXECUTE _query;
+END
+$$
+LANGUAGE plpgsql;
+
+ALTER FUNCTION get_referral_summary OWNER TO writeuser;
+CREATE OR REPLACE FUNCTION get_referrals
+(
+  _login_id                                       uuid,
+  _referral_code                                  text,
+  _page_number                                    integer,
+  _search_account                                 text
+)
+RETURNS TABLE
+(
+  moniker                                         text,
+  account                                         address,
+  points                                          numeric,
+  referral_points                                 numeric,
+  referral_code                                   character varying(32),
+  referrer                                        uuid,
+  page_size                                       integer,
+  page_number                                     integer,
+  total_records                                   integer,
+  total_pages                                     integer
+)
+AS
+$$
+  DECLARE _query                                  text;
+  DECLARE _pagination_query                       text;
+  DECLARE _page_size                              integer = 25;
+  DECLARE _offset                                 integer;
+  DECLARE _total_records                          integer;
+  DECLARE _total_pages                            integer;
+  DECLARE _referrer_id                            uuid = get_user_id_by_login_id(_login_id);
+BEGIN
+  IF _page_number < 1 THEN
+    _page_number := 1;
+  END IF;
+
+  _query := format('
+    WITH result
+    AS
+    (
+      SELECT * FROM referral_point_view
+      WHERE 1 = 1
+      AND referrer        = %s
+      AND referral_code   = %s
+      AND account         ILIKE %s
+    )', quote_literal(_referrer_id), quote_literal(_referral_code), quote_literal_ilike(_search_account));
+
+  _pagination_query := CONCAT(_query, E'\n\tSELECT COUNT(*) FROM result;');
+
+  EXECUTE _pagination_query INTO _total_records;
+
+  _total_pages := COALESCE(CEILING(_total_records::numeric / _page_size), 0);
+  _offset := (_page_number - 1) * _page_size;
+
+  _query := CONCAT
+    (
+      _query,
+      E'\n',
+      format
+      (
+        E'\tSELECT
+          moniker,
+          account,
+          points::numeric(20, 2),
+          referral_points::numeric(20, 2),
+          referral_code,
+          referrer,
+          %s AS page_size,
+          %s AS page_number,
+          %s AS total_records,
+          %s AS total_pages
+        FROM result
+        ORDER BY points ASC
+        LIMIT %1$s
+        OFFSET %5$s;',
+        _page_size,
+        _page_number,
+        _total_records,
+        _total_pages,
+        _offset
+      )
+    );
+
+  RAISE NOTICE '%', _query;
+
+  RETURN QUERY EXECUTE _query;
+END
+$$
+LANGUAGE plpgsql;
+
+ALTER FUNCTION get_referrals OWNER TO writeuser;
 CREATE OR REPLACE FUNCTION get_referrer(_account text)
 RETURNS uuid
 STABLE PARALLEL SAFE
@@ -311,6 +456,46 @@ LANGUAGE plpgsql;
 
 ALTER FUNCTION get_referrer(_account text) OWNER TO writeuser;
 
+CREATE OR REPLACE FUNCTION get_single_referral
+(
+  _login_id                                       uuid,
+  _referral_code                                  text
+)
+RETURNS TABLE
+(
+  referral_id                                     uuid,
+  memo                                            character varying(512),
+  referral_code                                   character varying(32),
+  created_at                                      TIMESTAMP WITH TIME ZONE,
+  total_referrals                                 integer,
+  deleted                                         boolean,
+  deleted_at                                      TIMESTAMP WITH TIME ZONE
+)
+AS
+$$
+  DECLARE _query                                  text;
+  DECLARE _referrer_id                            uuid = get_user_id_by_login_id(_login_id);
+BEGIN
+  _query := format('
+    SELECT
+      referral_id,
+      memo,
+      referral_code,
+      created_at,
+      total_referrals,
+      deleted,
+      deleted_at
+    FROM core.referrals
+    WHERE 1 = 1
+    AND referrer = %s
+    AND referral_code = %s;', quote_literal(_referrer_id), quote_literal(_referral_code));
+
+  RETURN QUERY EXECUTE _query;
+END
+$$
+LANGUAGE plpgsql;
+
+ALTER FUNCTION get_single_referral OWNER TO writeuser;
 CREATE OR REPLACE FUNCTION get_user_id_by_login_id(_login_id uuid)
 RETURNS uuid
 STABLE PARALLEL SAFE
@@ -1019,6 +1204,74 @@ CROSS JOIN summary;
 
 ALTER VIEW point_summary_view OWNER TO writeuser;
 
+CREATE OR REPLACE VIEW referral_point_view
+AS
+WITH result
+AS
+(
+  SELECT
+    account,
+    points                           AS points,
+    referral_points                  AS referral_points
+  FROM liquidity_point_view
+
+  UNION ALL
+
+  SELECT
+    account,
+    points                           AS points,
+    referral_points                  AS referral_points
+  FROM swap_point_view
+),
+consolidated
+AS
+(
+  SELECT
+    account,
+    get_name_by_account(account)     AS moniker,
+    SUM(points)                      AS points,
+    SUM(referral_points)             AS referral_points
+  FROM result
+  GROUP BY account
+),
+with_referral_code
+AS
+(
+  SELECT
+    moniker,
+    account,
+    points::numeric(20, 2),
+    referral_points::numeric(20, 2),
+    (
+      SELECT referral_code
+      FROM core.referrals
+      WHERE 1 = 1
+      AND referral_id =
+      (
+        SELECT referral_id
+        FROM core.users
+        WHERE 1 = 1
+        AND core.users.account=consolidated.account
+      )
+    ),
+    (
+      SELECT referrer
+      FROM core.referrals
+      WHERE 1 = 1
+      AND referral_id =
+      (
+        SELECT referral_id
+        FROM core.users
+        WHERE 1 = 1
+        AND core.users.account=consolidated.account
+      )
+    )
+  FROM consolidated
+  ORDER BY points DESC
+)
+SELECT * FROM with_referral_code;
+
+ALTER VIEW referral_point_view OWNER TO writeuser;
 CREATE SCHEMA IF NOT EXISTS meta;
 
 CREATE TABLE IF NOT EXISTS meta.locks
