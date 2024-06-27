@@ -1,16 +1,16 @@
 CREATE OR REPLACE VIEW referral_point_view
 AS
-WITH result 
-AS 
+WITH result
+AS
 (
   SELECT
     account,
     points                           AS points,
     referral_points                  AS referral_points
   FROM liquidity_point_view
-  
+
   UNION ALL
-  
+
   SELECT
     account,
     points                           AS points,
@@ -37,33 +37,31 @@ AS
     points::numeric(20, 2),
     referral_points::numeric(20, 2),
     (
-      SELECT
-        referral_code
-      FROM core.referrals 
+      SELECT referral_code
+      FROM core.referrals
       WHERE 1 = 1
-      AND referral_id=(
-        SELECT
-          referral_id
+      AND referral_id =
+      (
+        SELECT referral_id
         FROM core.users
         WHERE 1 = 1
         AND core.users.account=consolidated.account
       )
     ),
-	  (
-      SELECT
-        referrer
-      FROM core.referrals 
+    (
+      SELECT referrer
+      FROM core.referrals
       WHERE 1 = 1
-      AND referral_id=(
-        SELECT
-          referral_id
+      AND referral_id =
+      (
+        SELECT referral_id
         FROM core.users
         WHERE 1 = 1
         AND core.users.account=consolidated.account
       )
     )
   FROM consolidated
-  ORDER BY points DESC 
+  ORDER BY points DESC
 )
 SELECT * FROM with_referral_code;
 

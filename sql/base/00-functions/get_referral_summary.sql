@@ -15,12 +15,12 @@ $$
 BEGIN
   _query := format('
   SELECT
-	  SUM(points)               AS total_points,
-	  SUM(referral_points)      AS total_referral_points
-	FROM referral_point_view
-	WHERE 1 = 1
+    SUM(points)                                   AS total_points,
+    SUM(referral_points)                          AS total_referral_points
+  FROM referral_point_view
+  WHERE 1 = 1
   AND referrer=%s
-	AND referral_code=%s', quote_literal(_referrer_id), quote_literal(_referral_code));
+  AND referral_code=%s', quote_literal(_referrer_id), quote_literal(_referral_code));
 
   RETURN QUERY EXECUTE _query;
 END

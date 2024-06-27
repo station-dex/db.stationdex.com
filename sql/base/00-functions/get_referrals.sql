@@ -12,11 +12,11 @@ RETURNS TABLE
   points                                          numeric,
   referral_points                                 numeric,
   referral_code                                   character varying(32),
-  referrer		                                    uuid,
+  referrer                                        uuid,
   page_size                                       integer,
   page_number                                     integer,
   total_records                                   integer,
-  total_pages                                     integer  
+  total_pages                                     integer
 )
 AS
 $$
@@ -38,9 +38,9 @@ BEGIN
     (
       SELECT * FROM referral_point_view
       WHERE 1 = 1
-      AND referrer=%s
-      AND referral_code=%s
-      AND account ILIKE %s
+      AND referrer        = %s
+      AND referral_code   = %s
+      AND account         ILIKE %s
     )', quote_literal(_referrer_id), quote_literal(_referral_code), quote_literal_ilike(_search_account));
 
   _pagination_query := CONCAT(_query, E'\n\tSELECT COUNT(*) FROM result;');
@@ -53,7 +53,7 @@ BEGIN
   _query := CONCAT
     (
       _query,
-      E'\n', 
+      E'\n',
       format
       (
         E'\tSELECT
@@ -70,7 +70,7 @@ BEGIN
         FROM result
         ORDER BY points ASC
         LIMIT %1$s
-        OFFSET %5$s;', 
+        OFFSET %5$s;',
         _page_size,
         _page_number,
         _total_records,

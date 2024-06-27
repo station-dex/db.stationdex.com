@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION get_single_referral
   _login_id                                       uuid,
   _referral_code                                  text
 )
-RETURNS TABLE 
+RETURNS TABLE
 (
   referral_id                                     uuid,
   memo                                            character varying(512),
